@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Analyzer Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js">
+    </script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #3730A3;
+            --primary-light: #EEF2FF;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --purple: #8B5CF6;
+            --bg: #F1F5F9;
+            --card: #FFFFFF;
+            --text: #1E293B;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s ease;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            font-weight: 500;
+            font-size: 14px;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+            box-shadow: var(--shadow-lg);
+            max-width: 380px;
+        }
+        .toast.success {
+            background: var(--success);
+        }
+        .toast.error {
+            background: var(--danger);
+        }
+        .toast.info {
+            background: var(--primary);
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Auth & Profile Setup Pages */
+        .fullscreen-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F5F3FF 100%);
+        }
+        .auth-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+        .auth-card .logo {
+            font-size: 42px;
+            margin-bottom: 8px;
+        }
+        .auth-card h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+        .auth-card .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        .input-group {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: var(--text);
+        }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            transition: var(--transition);
+            font-family: var(--font);
+            background: #FAFBFC;
+        }
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            background: #fff;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+        }
+        .btn-outline {
+            background: #fff;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        .btn-outline:hover {
+            background: var(--primary-light);
+        }
+        .btn-sm {
+            padding: 7px 14px;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+        .btn-xs {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-warning {
+            background: var(--warning);
+            color: #1a1a1a;
+        }
+        .link-text {
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            font-size: 14px;
+        }
+        .link-text:hover {
+            color: var(--primary-dark);
+        }
+        .pfp-upload {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            border: 3px dashed var(--primary);
+            transition: var(--transition);
+        }
+        .pfp-upload:hover {
+            border-color: var(--primary-dark);
+            background: #E0E7FF;
+        }
+        .pfp-upload img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .pfp-upload .placeholder {
+            font-size: 36px;
+            color: var(--primary);
+        }
+
+        /* Main App Layout */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 240px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+        .sidebar .nav-logo {
+            font-size: 22px;
+            font-weight: 700;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sidebar .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font);
+        }
+        .sidebar .nav-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .sidebar .nav-item.active {
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+        }
+        .sidebar .nav-item .icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        .sidebar .user-info {
+            margin-top: auto;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .sidebar .user-info img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary-light);
+        }
+        .sidebar .user-info .user-name {
+            font-weight: 600;
+            font-size: 13px;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 28px 32px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .tag-easy {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .tag-moderate {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        .tag-hard {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .tag-unsolved {
+            background: #EDE9FE;
+            color: #5B21B6;
+        }
+
+        /* Timer */
+        .timer-display {
+            font-size: 56px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            text-align: center;
+            letter-spacing: 2px;
+            color: var(--text);
+            padding: 16px 0;
+        }
+        .timer-display .lap-time {
+            font-size: 20px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .question-counter {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        /* Practice Buttons */
+        .practice-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .practice-buttons .btn {
+            min-width: 130px;
+            font-size: 15px;
+            padding: 14px 20px;
+            border-radius: 25px;
+        }
+        .btn-done {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-done:hover {
+            background: #059669;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        }
+        .btn-cantsolve {
+            background: var(--warning);
+            color: #1a1a1a;
+        }
+        .btn-cantsolve:hover {
+            background: #D97706;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+        }
+        .btn-submit {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-submit:hover {
+            background: #DC2626;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Report Table */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .report-table th {
+            background: #F8FAFC;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+        }
+        .report-table tr:hover {
+            background: #FAFBFC;
+        }
+        .report-table .editable-difficulty {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+        .report-table .editable-difficulty:hover {
+            background: var(--primary-light);
+        }
+
+        /* Community */
+        .community-post {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        .community-post .post-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .community-post .post-header img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary-light);
+        }
+        .community-post .post-image {
+            max-width: 100%;
+            max-height: 350px;
+            border-radius: var(--radius-sm);
+            margin: 10px 0;
+            cursor: pointer;
+            object-fit: contain;
+            background: #f8f8f8;
+        }
+        .comment-thread {
+            margin-left: 0;
+            border-left: 2px solid var(--border);
+            padding-left: 0;
+        }
+        .comment-thread .comment {
+            padding: 10px 0 10px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .comment-thread .comment.reply {
+            margin-left: 20px;
+            border-left: 2px solid #E0E7FF;
+            padding-left: 14px;
+        }
+        .comment .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .comment .comment-header img {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .view-replies-btn {
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-left: 16px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .view-replies-btn:hover {
+            text-decoration: underline;
+        }
+        .hidden-replies {
+            display: none;
+        }
+        .hidden-replies.show {
+            display: block;
+        }
+
+        /* Image preview modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+        .modal-overlay img {
+            max-width: 90vw;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 32px;
+            color: #fff;
+            cursor: pointer;
+            z-index: 9999;
+        }
+
+        /* Subject chips */
+        .subject-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .subject-chip {
+            padding: 10px 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+            border: 2px solid var(--border);
+            background: #fff;
+            color: var(--text);
+        }
+        .subject-chip:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .subject-chip.selected {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Custom input */
+        .custom-subject-input {
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 25px;
+            font-size: 14px;
+            width: 200px;
+            transition: var(--transition);
+            font-family: var(--font);
+        }
+        .custom-subject-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 8px;
+                gap: 4px;
+                justify-content: center;
+                box-shadow: var(--shadow);
+            }
+            .sidebar .nav-logo {
+                display: none;
+            }
+            .sidebar .nav-item {
+                padding: 8px 10px;
+                font-size: 12px;
+                gap: 6px;
+                width: auto;
+                flex: none;
+            }
+            .sidebar .user-info {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+            .timer-display {
+                font-size: 36px;
+            }
+            .practice-buttons .btn {
+                min-width: 100px;
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+            .report-table {
+                font-size: 11px;
+            }
+            .report-table th,
+            .report-table td {
+                padding: 6px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ==================== AUTH PAGE ==================== -->
+    <div id="authPage" class="fullscreen-center">
+        <div class="auth-card">
+            <div class="logo">📊</div>
+            <h2 id="authTitle">Welcome Back</h2>
+            <p class="subtitle" id="authSubtitle">Login to continue your practice analysis</p>
+            <div id="authForm">
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="authEmail" placeholder="you@example.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="authPassword" placeholder="••••••••">
+                </div>
+                <button class="btn btn-primary" id="authSubmitBtn" style="margin-top:8px;">Login</button>
+                <p style="margin-top:14px;font-size:14px;">
+                    <span id="authToggleText">Don't have an account?</span>
+                    <span class="link-text" id="authToggleLink">Register</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PROFILE SETUP PAGE ==================== -->
+    <div id="profileSetupPage" class="fullscreen-center" style="display:none;">
+        <div class="auth-card">
+            <h2>Set Up Your Profile</h2>
+            <p class="subtitle">Tell us a bit about yourself</p>
+            <div class="pfp-upload" id="pfpUploadBtn">
+                <span class="placeholder" id="pfpPlaceholder">👤</span>
+                <img id="pfpPreview" src="" alt="PFP" style="display:none;">
+            </div>
+            <input type="file" id="pfpFileInput" accept="image/*" style="display:none;">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="profileName" placeholder="Your name">
+            </div>
+            <div class="input-group">
+                <label>School / Institution</label>
+                <input type="text" id="profileSchool" placeholder="Your school or institution">
+            </div>
+            <button class="btn btn-primary" id="saveProfileBtn">Save & Continue</button>
+            <button class="btn btn-outline" id="skipProfileBtn" style="margin-top:8px;width:100%;">Skip for now</button>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="mainApp" class="app-container" style="display:none;">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="nav-logo">📊 Analyzer Pro</div>
+            <button class="nav-item active" data-page="dashboard">
+                <span class="icon">🏠</span> Dashboard
+            </button>
+            <button class="nav-item" data-page="practice">
+                <span class="icon">⏱️</span> Practice
+            </button>
+            <button class="nav-item" data-page="history">
+                <span class="icon">📋</span> History
+            </button>
+            <button class="nav-item" data-page="community">
+                <span class="icon">💬</span> Community
+            </button>
+            <div class="user-info" id="sidebarUserInfo">
+                <img id="sidebarPfp" src="" alt="PFP" style="background:#E0E7FF;">
+                <span class="user-name" id="sidebarUserName">User</span>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboardPage">
+                <div class="card">
+                    <h3>📚 Start a Practice Session</h3>
+                    <p style="color:var(--text-secondary);margin-bottom:12px;">Select a subject or type your own:</p>
+                    <div class="subject-chips" id="subjectChips">
+                        <span class="subject-chip" data-subject="Mathematics">Mathematics</span>
+                        <span class="subject-chip" data-subject="Physics">Physics</span>
+                        <span class="subject-chip" data-subject="Chemistry">Chemistry</span>
+                        <span class="subject-chip" data-subject="Biology">Biology</span>
+                        <span class="subject-chip" data-subject="Computer Science">Computer Science</span>
+                        <span class="subject-chip" data-subject="English">English</span>
+                        <span class="subject-chip" data-subject="History">History</span>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input type="text" class="custom-subject-input" id="customSubjectInput" placeholder="Or type subject name...">
+                        <button class="btn btn-primary btn-sm" id="startSessionBtn">Start Session ▶</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>📈 Quick Stats</h3>
+                    <div id="quickStats" style="display:flex;gap:20px;flex-wrap:wrap;">
+                        <div><strong>Total Sessions:</strong> <span id="statTotalSessions">0</span></div>
+                        <div><strong>Questions Solved:</strong> <span id="statTotalSolved">0</span></div>
+                        <div><strong>Avg Time/Question:</strong> <span id="statAvgTime">--</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practice Page -->
+            <div class="page" id="practicePage">
+                <div class="card" style="text-align:center;">
+                    <h3 id="practiceSubjectLabel">Subject: --</h3>
+                    <div class="question-counter">Question #<span id="currentQuestionNum">1</span></div>
+                    <div class="timer-display">
+                        <div id="sessionTimer">00:00:00</div>
+                        <div class="lap-time">⏱ Current Q: <span id="lapTimer">00:00:00</span></div>
+                    </div>
+                    <div class="practice-buttons">
+                        <button class="btn btn-done" id="doneBtn">✅ Done</button>
+                        <button class="btn btn-cantsolve" id="cantSolveBtn">❌ Can't Solve</button>
+                        <button class="btn btn-submit" id="submitSessionBtn">📤 Submit Session</button>
+                    </div>
+                    <p style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
+                        Questions recorded: <strong id="recordedCount">0</strong>
+                    </p>
+                </div>
+                <div class="card" id="liveQuestionList" style="max-height:300px;overflow-y:auto;">
+                    <h4>📝 Session Log</h4>
+                    <div id="liveLog" style="font-size:13px;color:var(--text-secondary);">No questions recorded yet.</div>
+                </div>
+            </div>
+
+            <!-- Report Page -->
+            <div class="page" id="reportPage">
+                <div class="card" id="reportCard">
+                    <h3>📊 Session Report</h3>
+                    <p id="reportMeta" style="color:var(--text-secondary);margin-bottom:16px;"></p>
+                    <div style="overflow-x:auto;">
+                        <table class="report-table" id="reportTable">
+                            <thead>
+                                <tr>
+                                    <th>Q#</th><th>Time Taken</th><th>Status</th><th>Difficulty</th><th>Important Img</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody"></tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
+                        ⚡ Avg time (solved): <strong id="reportAvgTime">--</strong> |
+                        Click difficulty to customize | Use 📷 to upload important question image
+                    </p>
+                    <button class="btn btn-primary btn-sm" id="saveReportBtn" style="margin-top:8px;">💾 Save Report</button>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div class="page" id="historyPage">
+                <div class="card">
+                    <h3>📋 Practice History</h3>
+                    <div id="historyList" style="display:flex;flex-direction:column;gap:12px;">
+                        <p style="color:var(--text-secondary);">Loading history...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Page -->
+            <div class="page" id="communityPage">
+                <div class="card">
+                    <h3>💬 Community Discussions</h3>
+                    <button class="btn btn-primary btn-sm" id="newPostBtn" style="margin-bottom:16px;">+ New Post</button>
+                    <div id="communityPostsContainer"></div>
+                </div>
+                <!-- New Post Modal -->
+                <div class="card" id="newPostForm" style="display:none;">
+                    <h4>Create a Post</h4>
+                    <div class="input-group">
+                        <label>Subject (optional)</label>
+                        <input type="text" id="postSubject" placeholder="e.g., Mathematics">
+                    </div>
+                    <div class="input-group">
+                        <label>Your Question / Discussion</label>
+                        <textarea id="postContent" rows="3" style="width:100%;padding:10px;border:2px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font);resize:vertical;" placeholder="Type your question or topic..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>Upload Image (optional)</label>
+                        <input type="file" id="postImageInput" accept="image/*" capture="environment">
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-primary btn-sm" id="submitPostBtn">Post</button>
+                        <button class="btn btn-outline btn-sm" id="cancelPostBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="imageModal" class="modal-overlay" style="display:none;">
+        <span class="modal-close" id="closeImageModal">✕</span>
+        <img id="modalImage" src="" alt="Preview">
+    </div>
+
+    <script>
+        // ==================== FIREBASE INIT ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjyOOL1Y9qGzql_FWvYfjxGx1FukoUH0I",
+            authDomain: "kvs-memories.firebaseapp.com",
+            databaseURL: "https://kvs-memories-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "kvs-memories",
+            storageBucket: "kvs-memories.firebasestorage.app",
+            messagingSenderId: "62349854159",
+            appId: "1:62349854159:web:0d26b214c54dcf00c5beba",
+            measurementId: "G-WB76L4JGET"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // ==================== GLOBAL STATE ====================
+        let currentUser = null;
+        let userProfile = null;
+        let activeSession = null; // { subject, sessionStartTime, lastLapTime, questions: [], questionNumber }
+        let sessionTimerInterval = null;
+        let lapTimerInterval = null;
+        let currentReportSessionId = null;
+        let currentReportData = null;
+        let pendingPfpFile = null;
+        let isRegistering = false;
+
+        // ==================== TOAST ====================
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3100);
+        }
+
+        // ==================== NAVIGATION ====================
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            const pageEl = document.getElementById(pageName + 'Page');
+            if (pageEl) pageEl.classList.add('active');
+            document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+            const navBtn = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+            if (navBtn) navBtn.classList.add('active');
+            if (pageName === 'history') loadHistory();
+            if (pageName === 'community') loadCommunityPosts();
+            if (pageName === 'dashboard') loadQuickStats();
+        }
+
+        // Sidebar nav clicks
+        document.getElementById('sidebar').addEventListener('click', (e) => {
+            const navItem = e.target.closest('.nav-item');
+            if (navItem) {
+                const page = navItem.dataset.page;
+                if (page) showPage(page);
+            }
+        });
+
+        // ==================== AUTH ====================
+        const authPage = document.getElementById('authPage');
+        const profileSetupPage = document.getElementById('profileSetupPage');
+        const mainApp = document.getElementById('mainApp');
+        const authTitle = document.getElementById('authTitle');
+        const authSubtitle = document.getElementById('authSubtitle');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const authToggleText = document.getElementById('authToggleText');
+        const authToggleLink = document.getElementById('authToggleLink');
+
+        function showAuthPage() {
+            authPage.style.display = 'flex';
+            profileSetupPage.style.display = 'none';
+            mainApp.style.display = 'none';
+            isRegistering = false;
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            if (isRegistering) {
+                authTitle.textContent = 'Create Account';
+                authSubtitle.textContent = 'Register to start analyzing your practice';
+                authSubmitBtn.textContent = 'Register';
+                authToggleText.textContent = 'Already have an account?';
+                authToggleLink.textContent = 'Login';
+            } else {
+                authTitle.textContent = 'Welcome Back';
+                authSubtitle.textContent = 'Login to continue your practice analysis';
+                authSubmitBtn.textContent = 'Login';
+                authToggleText.textContent = 'Don\'t have an account?';
+                authToggleLink.textContent = 'Register';
+            }
+        }
+
+        authToggleLink.addEventListener('click', () => {
+            isRegistering = !isRegistering;
+            updateAuthUI();
+        });
+
+        authSubmitBtn.addEventListener('click', async () => {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            if (!email || !password) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            try {
+                if (isRegistering) {
+                    const cred = await auth.createUserWithEmailAndPassword(email, password);
+                    currentUser = cred.user;
+                    showToast('Account created! Set up your profile.', 'success');
+                    showProfileSetup();
+                } else {
+                    const cred = await auth.signInWithEmailAndPassword(email, password);
+                    currentUser = cred.user;
+                    showToast('Logged in successfully!', 'success');
+                    await loadUserProfile();
+                    if (!userProfile || !userProfile.name) {
+                        showProfileSetup();
+                    } else {
+                        enterMainApp();
+                    }
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+
+        // ==================== PROFILE SETUP ====================
+        function showProfileSetup() {
+            authPage.style.display = 'none';
+            profileSetupPage.style.display = 'flex';
+            mainApp.style.display = 'none';
+            document.getElementById('profileName').value = userProfile?.name || '';
+            document.getElementById('profileSchool').value = userProfile?.school || '';
+            document.getElementById('pfpPreview').style.display = 'none';
+            document.getElementById('pfpPlaceholder').style.display = 'block';
+            pendingPfpFile = null;
+        }
+
+        document.getElementById('pfpUploadBtn').addEventListener('click', () => {
+            document.getElementById('pfpFileInput').click();
+        });
+        document.getElementById('pfpFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                pendingPfpFile = file;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById('pfpPreview').src = ev.target.result;
+                    document.getElementById('pfpPreview').style.display = 'block';
+                    document.getElementById('pfpPlaceholder').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+            const name = document.getElementById('profileName').value.trim();
+            const school = document.getElementById('profileSchool').value.trim();
+            if (!name) { showToast('Please enter your name', 'error'); return; }
+            try {
+                let pfpUrl = userProfile?.pfp || '';
+                if (pendingPfpFile && currentUser) {
+                    const ref = storage.ref(`profile_pictures/${currentUser.uid}`);
+                    await ref.put(pendingPfpFile);
+                    pfpUrl = await ref.getDownloadURL();
+                }
+                userProfile = { name, school, pfp: pfpUrl, email: currentUser?.email || '', updatedAt: new Date() };
+                if (currentUser) {
+                    await db.collection('users').doc(currentUser.uid).set(userProfile, { merge: true });
+                }
+                showToast('Profile saved!', 'success');
+                enterMainApp();
+            } catch (err) {
+                showToast('Error saving profile: ' + err.message, 'error');
+            }
+        });
+
+        document.getElementById('skipProfileBtn').addEventListener('click', () => {
+            if (!userProfile) userProfile = { name: 'User', school: '', pfp: '', email: currentUser?.email || '' };
+            enterMainApp();
+        });
+
+        async function loadUserProfile() {
+            if (!currentUser) return;
+            try {
+                const doc = await db.collection('users').doc(currentUser.uid).get();
+                if (doc.exists) {
+                    userProfile = doc.data();
+                } else {
+                    userProfile = { name: '', school: '', pfp: '', email: currentUser.email || '' };
+                }
+            } catch (err) {
+                userProfile = { name: '', school: '', pfp: '', email: currentUser.email || '' };
+            }
+        }
+
+        function enterMainApp() {
+            authPage.style.display = 'none';
+            profileSetupPage.style.display = 'none';
+            mainApp.style.display = 'flex';
+            updateSidebarUser();
+            showPage('dashboard');
+            loadQuickStats();
+        }
+
+        function updateSidebarUser() {
+            document.getElementById('sidebarUserName').textContent = userProfile?.name || 'User';
+            if (userProfile?.pfp) {
+                document.getElementById('sidebarPfp').src = userProfile.pfp;
+            }
+        }
+
+        // ==================== SESSION MANAGEMENT ====================
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function getElapsedSince(time) {
+            return (Date.now() - time) / 1000;
+        }
+
+        function updateTimers() {
+            if (!activeSession) return;
+            const totalElapsed = getElapsedSince(activeSession.sessionStartTime);
+            const lapElapsed = getElapsedSince(activeSession.lastLapTime);
+            document.getElementById('sessionTimer').textContent = formatTime(totalElapsed);
+            document.getElementById('lapTimer').textContent = formatTime(lapElapsed);
+            document.getElementById('recordedCount').textContent = activeSession.questions.length;
+            document.getElementById('currentQuestionNum').textContent = activeSession.questionNumber;
+        }
+
+        function startTimers() {
+            stopTimers();
+            updateTimers();
+            sessionTimerInterval = setInterval(updateTimers, 200);
+        }
+
+        function stopTimers() {
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            if (lapTimerInterval) clearInterval(lapTimerInterval);
+            sessionTimerInterval = null;
+            lapTimerInterval = null;
+        }
+
+        function recordQuestion(status) {
+            if (!activeSession) return;
+            const now = Date.now();
+            const timeTaken = (now - activeSession.lastLapTime) / 1000;
+            activeSession.questions.push({
+                questionNumber: activeSession.questionNumber,
+                timeTaken: timeTaken,
+                status: status, // 'solved' or 'not-solved'
+                difficulty: null, // auto-assigned later
+                customDifficulty: null,
+                importantImageUrl: null
+            });
+            activeSession.lastLapTime = now;
+            activeSession.questionNumber++;
+            updateTimers();
+            updateLiveLog();
+        }
+
+        function updateLiveLog() {
+            const logDiv = document.getElementById('liveLog');
+            if (!activeSession || activeSession.questions.length === 0) {
+                logDiv.innerHTML = 'No questions recorded yet.';
+                return;
+            }
+            let html = '';
+            activeSession.questions.forEach(q => {
+                const statusEmoji = q.status === 'solved' ? '✅' : '❌';
+                const statusText = q.status === 'solved' ? 'Solved' : 'Not Solved';
+                html +=
+                    `<div style="padding:4px 0;border-bottom:1px solid #f1f5f9;">Q${q.questionNumber}: ${statusEmoji} ${statusText} — ${formatTime(q.timeTaken)}</div>`;
+            });
+            logDiv.innerHTML = html;
+            const listEl = document.getElementById('liveQuestionList');
+            if (listEl) listEl.scrollTop = listEl.scrollHeight;
+        }
+
+        document.getElementById('startSessionBtn').addEventListener('click', () => {
+            let subject = document.getElementById('customSubjectInput').value.trim();
+            if (!subject) {
+                const selected = document.querySelector('.subject-chip.selected');
+                if (selected) subject = selected.dataset.subject;
+            }
+            if (!subject) {
+                showToast('Please select or type a subject', 'error');
+                return;
+            }
+            activeSession = {
+                subject: subject,
+                sessionStartTime: Date.now(),
+                lastLapTime: Date.now(),
+                questions: [],
+                questionNumber: 1
+            };
+            document.getElementById('practiceSubjectLabel').textContent = 'Subject: ' + subject;
+            document.getElementById('liveLog').innerHTML = 'No questions recorded yet.';
+            document.getElementById('recordedCount').textContent = '0';
+            document.getElementById('currentQuestionNum').textContent = '1';
+            document.getElementById('sessionTimer').textContent = '00:00:00';
+            document.getElementById('lapTimer').textContent = '00:00:00';
+            startTimers();
+            showPage('practice');
+            showToast(`Session started: ${subject}`, 'success');
+        });
+
+        document.getElementById('doneBtn').addEventListener('click', () => {
+            if (!activeSession) { showToast('No active session', 'error'); return; }
+            recordQuestion('solved');
+        });
+
+        document.getElementById('cantSolveBtn').addEventListener('click', () => {
+            if (!activeSession) { showToast('No active session', 'error'); return; }
+            recordQuestion('not-solved');
+        });
+
+        document.getElementById('submitSessionBtn').addEventListener('click', () => {
+            if (!activeSession || activeSession.questions.length === 0) {
+                showToast('Record at least one question before submitting', 'error');
+                return;
+            }
+            stopTimers();
+            generateReport(activeSession);
+            activeSession = null;
+            document.getElementById('sessionTimer').textContent = '00:00:00';
+            document.getElementById('lapTimer').textContent = '00:00:00';
+            document.getElementById('liveLog').innerHTML = 'No questions recorded yet.';
+            document.getElementById('recordedCount').textContent = '0';
+            document.getElementById('currentQuestionNum').textContent = '1';
+        });
+
+        // Subject chip selection
+        document.getElementById('subjectChips').addEventListener('click', (e) => {
+            const chip = e.target.closest('.subject-chip');
+            if (chip) {
+                document.querySelectorAll('.subject-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                document.getElementById('customSubjectInput').value = '';
+            }
+        });
+
+        // ==================== REPORT GENERATION ====================
+        function generateReport(sessionData) {
+            const solvedQuestions = sessionData.questions.filter(q => q.status === 'solved');
+            let avgTime = 0;
+            if (solvedQuestions.length > 0) {
+                const totalTime = solvedQuestions.reduce((sum, q) => sum + q.timeTaken, 0);
+                avgTime = totalTime / solvedQuestions.length;
+            }
+            // Auto-classify
+            sessionData.questions.forEach(q => {
+                if (q.status === 'not-solved') {
+                    q.difficulty = 'unsolved';
+                } else if (solvedQuestions.length <= 1) {
+                    q.difficulty = 'moderate';
+                } else {
+                    const ratio = q.timeTaken / avgTime;
+                    if (ratio < 0.7) q.difficulty = 'easy';
+                    else if (ratio <= 1.3) q.difficulty = 'moderate';
+                    else q.difficulty = 'hard';
+                }
+            });
+
+            currentReportData = { ...sessionData, avgTime, totalQuestions: sessionData.questions.length };
+            currentReportSessionId = 'session_' + Date.now();
+            displayReport(currentReportData);
+            showPage('report');
+        }
+
+        function displayReport(data) {
+            document.getElementById('reportMeta').textContent =
+                `Subject: ${data.subject} | Total Questions: ${data.totalQuestions} | Date: ${new Date().toLocaleDateString()}`;
+            document.getElementById('reportAvgTime').textContent = data.avgTime > 0 ? formatTime(data.avgTime) : '--';
+            const tbody = document.getElementById('reportTableBody');
+            let html = '';
+            data.questions.forEach((q, idx) => {
+                const diffTag = getDifficultyTag(q);
+                const imgCell = q.importantImageUrl ?
+                    `<img src="${q.importantImageUrl}" style="width:36px;height:36px;border-radius:6px;cursor:pointer;object-fit:cover;" onclick="previewImage('${q.importantImageUrl}')" title="View">` :
+                    `<button class="btn btn-xs btn-outline upload-important-btn" data-qidx="${idx}">📷</button>`;
+                html += `
+                <tr>
+                    <td><strong>Q${q.questionNumber}</strong></td>
+                    <td>${formatTime(q.timeTaken)}</td>
+                    <td>${q.status === 'solved' ? '✅ Solved' : '❌ Not Solved'}</td>
+                    <td><span class="editable-difficulty" data-qidx="${idx}" title="Click to customize">${diffTag}</span></td>
+                    <td>${imgCell}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+
+            // Editable difficulty
+            tbody.querySelectorAll('.editable-difficulty').forEach(el => {
+                el.addEventListener('click', function() {
+                    const qIdx = parseInt(this.dataset.qidx);
+                    cycleDifficulty(qIdx, this);
+                });
+            });
+
+            // Upload important image buttons
+            tbody.querySelectorAll('.upload-important-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const qIdx = parseInt(this.dataset.qidx);
+                    triggerImportantImageUpload(qIdx);
+                });
+            });
+        }
+
+        function getDifficultyTag(q) {
+            const diff = q.customDifficulty || q.difficulty;
+            switch (diff) {
+                case 'easy':
+                    return '<span class="tag tag-easy">Easy</span>';
+                case 'moderate':
+                    return '<span class="tag tag-moderate">Moderate</span>';
+                case 'hard':
+                    return '<span class="tag tag-hard">Hard</span>';
+                case 'unsolved':
+                    return '<span class="tag tag-unsolved">Can\'t Solve</span>';
+                default:
+                    return '<span class="tag tag-moderate">Moderate</span>';
+            }
+        }
+
+        function cycleDifficulty(qIdx, el) {
+            if (!currentReportData) return;
+            const q = currentReportData.questions[qIdx];
+            const options = ['easy', 'moderate', 'hard', 'unsolved'];
+            const current = q.customDifficulty || q.difficulty || 'moderate';
+            const currentIdx = options.indexOf(current);
+            const nextIdx = (currentIdx + 1) % options.length;
+            q.customDifficulty = options[nextIdx];
+            el.innerHTML = getDifficultyTag(q);
+            showToast(`Q${q.questionNumber} marked as: ${options[nextIdx]}`, 'info');
+        }
+
+        function triggerImportantImageUpload(qIdx) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file || !currentUser) return;
+                try {
+                    const ref = storage.ref(
+                        `important_questions/${currentUser.uid}/${currentReportSessionId}/q${qIdx}_${Date.now()}`);
+                    await ref.put(file);
+                    const url = await ref.getDownloadURL();
+                    if (currentReportData && currentReportData.questions[qIdx]) {
+                        currentReportData.questions[qIdx].importantImageUrl = url;
+                    }
+                    displayReport(currentReportData);
+                    showToast('Image uploaded for important question!', 'success');
+                } catch (err) {
+                    showToast('Upload failed: ' + err.message, 'error');
+                }
+            };
+            input.click();
+        }
+
+        document.getElementById('saveReportBtn').addEventListener('click', async () => {
+            if (!currentReportData || !currentUser) {
+                showToast('No report to save', 'error');
+                return;
+            }
+            try {
+                const sessionDoc = {
+                    uid: currentUser.uid,
+                    subject: currentReportData.subject,
+                    date: new Date().toISOString(),
+                    questions: currentReportData.questions.map(q => ({
+                        questionNumber: q.questionNumber,
+                        timeTaken: q.timeTaken,
+                        status: q.status,
+                        difficulty: q.customDifficulty || q.difficulty,
+                        importantImageUrl: q.importantImageUrl || null
+                    })),
+                    avgTime: currentReportData.avgTime,
+                    totalQuestions: currentReportData.totalQuestions,
+                    solvedCount: currentReportData.questions.filter(q => q.status === 'solved').length,
+                    notSolvedCount: currentReportData.questions.filter(q => q.status === 'not-solved').length,
+                    sessionId: currentReportSessionId
+                };
+                await db.collection('practiceSessions').doc(currentReportSessionId).set(sessionDoc);
+                showToast('Report saved successfully!', 'success');
+                loadQuickStats();
+            } catch (err) {
+                showToast('Error saving report: ' + err.message, 'error');
+            }
+        });
+
+        // ==================== HISTORY ====================
+        async function loadHistory() {
+            const container = document.getElementById('historyList');
+            if (!currentUser) { container.innerHTML = '<p>Please login.</p>'; return; }
+            container.innerHTML = '<p style="color:var(--text-secondary);">Loading history...</p>';
+            try {
+                const snapshot = await db.collection('practiceSessions')
+                    .where('uid', '==', currentUser.uid)
+                    .orderBy('date', 'desc')
+                    .limit(30)
+                    .get();
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="color:var(--text-secondary);">No practice sessions yet.</p>';
+                    return;
+                }
+                let html = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const dateStr = new Date(data.date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    html += `
+                <div class="card" style="cursor:pointer;" onclick="viewHistoryReport('${doc.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <strong>📚 ${data.subject}</strong>
+                        <span style="font-size:13px;color:var(--text-secondary);">${dateStr}</span>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
+                        Questions: ${data.totalQuestions} | Solved: ${data.solvedCount} | Not Solved: ${data.notSolvedCount} | Avg: ${data.avgTime > 0 ? formatTime(data.avgTime) : '--'}
+                    </div>
+                </div>`;
+                });
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p>Error loading history.</p>';
+                console.error(err);
+            }
+        }
+
+        async function viewHistoryReport(sessionId) {
+            try {
+                const doc = await db.collection('practiceSessions').doc(sessionId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    currentReportData = {
+                        subject: data.subject,
+                        questions: data.questions,
+                        avgTime: data.avgTime,
+                        totalQuestions: data.totalQuestions
+                    };
+                    currentReportSessionId = sessionId;
+                    displayReport(currentReportData);
+                    showPage('report');
+                }
+            } catch (err) {
+                showToast('Error loading session', 'error');
+            }
+        }
+        window.viewHistoryReport = viewHistoryReport;
+
+        // ==================== QUICK STATS ====================
+        async function loadQuickStats() {
+            if (!currentUser) return;
+            try {
+                const snapshot = await db.collection('practiceSessions')
+                    .where('uid', '==', currentUser.uid)
+                    .get();
+                let totalSessions = snapshot.size;
+                let totalSolved = 0;
+                let totalTime = 0;
+                let solvedCount = 0;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalSolved += data.solvedCount || 0;
+                    if (data.questions) {
+                        data.questions.forEach(q => {
+                            if (q.status === 'solved') {
+                                totalTime += q.timeTaken || 0;
+                                solvedCount++;
+                            }
+                        });
+                    }
+                });
+                document.getElementById('statTotalSessions').textContent = totalSessions;
+                document.getElementById('statTotalSolved').textContent = totalSolved;
+                document.getElementById('statAvgTime').textContent = solvedCount > 0 ? formatTime(totalTime /
+                    solvedCount) : '--';
+            } catch (err) {
+                console.error('Stats error:', err);
+            }
+        }
+
+        // ==================== COMMUNITY ====================
+        async function loadCommunityPosts() {
+            const container = document.getElementById('communityPostsContainer');
+            container.innerHTML = '<p style="color:var(--text-secondary);">Loading posts...</p>';
+            try {
+                const snapshot = await db.collection('communityPosts')
+                    .orderBy('createdAt', 'desc')
+                    .limit(40)
+                    .get();
+                if (snapshot.empty) {
+                    container.innerHTML =
+                        '<p style="color:var(--text-secondary);">No posts yet. Be the first to start a discussion!</p>';
+                    return;
+                }
+                let html = '';
+                for (const docSnapshot of snapshot.docs) {
+                    const post = docSnapshot.data();
+                    const postId = docSnapshot.id;
+                    const dateStr = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : '';
+                    html += `
+                <div class="community-post" id="post-${postId}">
+                    <div class="post-header">
+                        <img src="${post.userPfp || ''}" alt="PFP" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" style="background:#E0E7FF;">
+                        <span style="display:none;width:36px;height:36px;border-radius:50%;background:#E0E7FF;align-items:center;justify-content:center;font-weight:700;">👤</span>
+                        <div>
+                            <strong>${post.userName || 'Anonymous'}</strong>
+                            <span style="font-size:12px;color:var(--text-secondary);margin-left:8px;">${dateStr}</span>
+                            ${post.subject ? `<span class="tag tag-moderate" style="margin-left:8px;">${post.subject}</span>` : ''}
+                        </div>
+                    </div>
+                    <p style="margin:8px 0;">${escapeHtml(post.content || '')}</p>
+                    ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" onclick="previewImage('${post.imageUrl}')" alt="Post image">` : ''}
+                    <div style="margin-top:10px;">
+                        <button class="btn btn-xs btn-outline toggle-comments-btn" data-postid="${postId}">💬 Comments</button>
+                        <button class="btn btn-xs btn-outline reply-post-btn" data-postid="${postId}" style="margin-left:6px;">↩ Reply</button>
+                    </div>
+                    <div class="comments-section" id="comments-${postId}" style="display:none;margin-top:12px;"></div>
+                    <div class="reply-form" id="replyForm-${postId}" style="display:none;margin-top:10px;">
+                        <textarea id="replyText-${postId}" rows="2" style="width:100%;padding:8px;border:2px solid var(--border);border-radius:6px;font-family:var(--font);resize:vertical;" placeholder="Write a reply..."></textarea>
+                        <input type="file" id="replyImage-${postId}" accept="image/*" capture="environment" style="margin-top:4px;">
+                        <button class="btn btn-primary btn-xs submit-reply-btn" data-postid="${postId}" data-parentid="" style="margin-top:4px;">Submit Reply</button>
+                    </div>
+                </div>`;
+                }
+                container.innerHTML = html;
+
+                // Attach event listeners
+                container.querySelectorAll('.toggle-comments-btn').forEach(btn => {
+                    btn.addEventListener('click', () => toggleComments(btn.dataset.postid));
+                });
+                container.querySelectorAll('.reply-post-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const postId = btn.dataset.postid;
+                        const form = document.getElementById('replyForm-' + postId);
+                        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                        form.querySelector('textarea').dataset.parentid = '';
+                    });
+                });
+                container.querySelectorAll('.submit-reply-btn').forEach(btn => {
+                    btn.addEventListener('click', () => submitCommunityReply(btn.dataset.postid, btn.dataset
+                        .parentid));
+                });
+            } catch (err) {
+                container.innerHTML = '<p>Error loading posts.</p>';
+                console.error(err);
+            }
+        }
+
+        async function toggleComments(postId) {
+            const section = document.getElementById('comments-' + postId);
+            if (section.style.display === 'block') {
+                section.style.display = 'none';
+                return;
+            }
+            section.style.display = 'block';
+            section.innerHTML = '<p style="font-size:13px;color:var(--text-secondary);">Loading comments...</p>';
+            try {
+                const snapshot = await db.collection('communityPosts').doc(postId).collection('comments')
+                    .orderBy('createdAt', 'asc')
+                    .get();
+                const allComments = [];
+                snapshot.forEach(doc => allComments.push({ id: doc.id, ...doc.data() }));
+                section.innerHTML = renderCommentTree(allComments, postId);
+                // Attach nested reply toggles & buttons
+                attachCommentListeners(section, postId);
+            } catch (err) {
+                section.innerHTML = '<p style="font-size:13px;">Error loading comments.</p>';
+            }
+        }
+
+        function renderCommentTree(comments, postId) {
+            const topLevel = comments.filter(c => !c.parentId);
+            const replies = comments.filter(c => c.parentId);
+            let html = '<div class="comment-thread">';
+            topLevel.forEach(c => {
+                html += renderSingleComment(c, replies, postId, 0);
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function renderSingleComment(comment, allReplies, postId, depth) {
+            const childReplies = allReplies.filter(r => r.parentId === comment.id);
+            const hasReplies = childReplies.length > 0;
+            const replyClass = depth > 0 ? ' reply' : '';
+            let html = `
+            <div class="comment${replyClass}" id="comment-${comment.id}">
+                <div class="comment-header">
+                    <img src="${comment.userPfp || ''}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex';" style="width:26px;height:26px;border-radius:50%;background:#E0E7FF;">
+                    <span style="display:none;width:26px;height:26px;border-radius:50%;background:#E0E7FF;align-items:center;justify-content:center;font-size:12px;font-weight:700;">👤</span>
+                    <strong style="font-size:13px;">${comment.userName || 'Anonymous'}</strong>
+                    <span style="font-size:11px;color:var(--text-secondary);">${comment.createdAt ? new Date(comment.createdAt.toDate()).toLocaleString() : ''}</span>
+                </div>
+                <p style="font-size:13px;margin:4px 0;">${escapeHtml(comment.content || '')}</p>
+                ${comment.imageUrl ? `<img src="${comment.imageUrl}" style="max-width:180px;max-height:180px;border-radius:6px;cursor:pointer;object-fit:contain;" onclick="previewImage('${comment.imageUrl}')">` : ''}
+                <button class="btn btn-xs btn-outline nested-reply-btn" data-postid="${postId}" data-parentid="${comment.id}" style="margin-top:4px;">Reply</button>
+                <div class="nested-reply-form" id="nestedReplyForm-${comment.id}" style="display:none;margin-top:6px;margin-left:10px;">
+                    <textarea id="nestedReplyText-${comment.id}" rows="2" style="width:100%;padding:6px;border:2px solid var(--border);border-radius:6px;font-family:var(--font);resize:vertical;font-size:12px;" placeholder="Write a reply..."></textarea>
+                    <input type="file" id="nestedReplyImage-${comment.id}" accept="image/*" capture="environment" style="margin-top:3px;">
+                    <button class="btn btn-primary btn-xs submit-nested-reply-btn" data-postid="${postId}" data-parentid="${comment.id}" style="margin-top:3px;">Submit</button>
+                </div>`;
+            if (hasReplies) {
+                html +=
+                    `<span class="view-replies-btn" data-commentid="${comment.id}">View ${childReplies.length} replies ▼</span>`;
+                html += `<div class="hidden-replies" id="replies-${comment.id}">`;
+                childReplies.forEach(r => {
+                    html += renderSingleComment(r, allReplies, postId, depth + 1);
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function attachCommentListeners(container, postId) {
+            container.querySelectorAll('.view-replies-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const repliesDiv = document.getElementById('replies-' + this.dataset.commentid);
+                    if (repliesDiv) {
+                        const isShowing = repliesDiv.classList.contains('show');
+                        repliesDiv.classList.toggle('show');
+                        this.textContent = isShowing ?
+                            `View ${repliesDiv.querySelectorAll('.comment').length} replies ▼` :
+                            'Hide replies ▲';
+                    }
+                });
+            });
+            container.querySelectorAll('.nested-reply-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const form = document.getElementById('nestedReplyForm-' + this.dataset.parentid);
+                    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+                });
+            });
+            container.querySelectorAll('.submit-nested-reply-btn').forEach(btn => {
+                btn.addEventListener('click', () => submitCommunityReply(btn.dataset.postid, btn.dataset
+                    .parentid));
+            });
+        }
+
+        async function submitCommunityReply(postId, parentId) {
+            if (!currentUser) { showToast('Please login to reply', 'error'); return; }
+            let textArea, imageInput;
+            if (parentId) {
+                textArea = document.getElementById('nestedReplyText-' + parentId);
+                imageInput = document.getElementById('nestedReplyImage-' + parentId);
+            } else {
+                textArea = document.getElementById('replyText-' + postId);
+                imageInput = document.getElementById('replyImage-' + postId);
+            }
+            const content = textArea ? textArea.value.trim() : '';
+            if (!content && (!imageInput || !imageInput.files[0])) {
+                showToast('Please write something or attach an image', 'error');
+                return;
+            }
+            try {
+                let imageUrl = null;
+                if (imageInput && imageInput.files[0]) {
+                    const ref = storage.ref(`community_comments/${postId}_${Date.now()}`);
+                    await ref.put(imageInput.files[0]);
+                    imageUrl = await ref.getDownloadURL();
+                }
+                await db.collection('communityPosts').doc(postId).collection('comments').add({
+                    uid: currentUser.uid,
+                    userName: userProfile?.name || 'Anonymous',
+                    userPfp: userProfile?.pfp || '',
+                    content: content,
+                    imageUrl: imageUrl,
+                    parentId: parentId || null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('Reply posted!', 'success');
+                if (textArea) textArea.value = '';
+                if (imageInput) imageInput.value = '';
+                toggleComments(postId);
+                setTimeout(() => toggleComments(postId), 300);
+            } catch (err) {
+                showToast('Error posting reply: ' + err.message, 'error');
+            }
+        }
+
+        document.getElementById('newPostBtn').addEventListener('click', () => {
+            document.getElementById('newPostForm').style.display = 'block';
+        });
+        document.getElementById('cancelPostBtn').addEventListener('click', () => {
+            document.getElementById('newPostForm').style.display = 'none';
+            document.getElementById('postContent').value = '';
+            document.getElementById('postSubject').value = '';
+            document.getElementById('postImageInput').value = '';
+        });
+        document.getElementById('submitPostBtn').addEventListener('click', async () => {
+            if (!currentUser) { showToast('Please login to post', 'error'); return; }
+            const content = document.getElementById('postContent').value.trim();
+            const subject = document.getElementById('postSubject').value.trim();
+            const imageFile = document.getElementById('postImageInput').files[0];
+            if (!content && !imageFile) { showToast('Please add text or an image', 'error'); return; }
+            try {
+                let imageUrl = null;
+                if (imageFile) {
+                    const ref = storage.ref(`community_posts/${Date.now()}_${imageFile.name}`);
+                    await ref.put(imageFile);
+                    imageUrl = await ref.getDownloadURL();
+                }
+                await db.collection('communityPosts').add({
+                    uid: currentUser.uid,
+                    userName: userProfile?.name || 'Anonymous',
+                    userPfp: userProfile?.pfp || '',
+                    content: content,
+                    imageUrl: imageUrl,
+                    subject: subject || null,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                showToast('Post created!', 'success');
+                document.getElementById('newPostForm').style.display = 'none';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postSubject').value = '';
+                document.getElementById('postImageInput').value = '';
+                loadCommunityPosts();
+            } catch (err) {
+                showToast('Error creating post: ' + err.message, 'error');
+            }
+        });
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ==================== IMAGE PREVIEW ====================
+        function previewImage(url) {
+            document.getElementById('modalImage').src = url;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+        window.previewImage = previewImage;
+        document.getElementById('closeImageModal').addEventListener('click', () => {
+            document.getElementById('imageModal').style.display = 'none';
+        });
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+
+        // ==================== AUTH STATE LISTENER ====================
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                await loadUserProfile();
+                if (userProfile && userProfile.name) {
+                    enterMainApp();
+                } else if (userProfile && !userProfile.name) {
+                    showProfileSetup();
+                } else {
+                    showProfileSetup();
+                }
+            } else {
+                currentUser = null;
+                userProfile = null;
+                stopTimers();
+                activeSession = null;
+                showAuthPage();
+            }
+        });
+
+        // ==================== INITIAL STATE ====================
+        showAuthPage();
+        console.log('🚀 Question Analyzer Pro initialized');
+        console.log('📋 Features: Auth | Timer | Lap Tracking | Auto-Classification | Custom Analysis | Image Upload | Community');
+    </script>
+</body>
+</html>
