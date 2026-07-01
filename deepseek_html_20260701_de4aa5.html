@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Circle – Community Q&A</title>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+
+    <!-- Font Awesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ===== ROOT VARIABLES ===== */
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --primary-light: #EEF2FF;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg: #F1F5F9;
+            --surface: #FFFFFF;
+            --surface-alt: #F8FAFC;
+            --border: #E2E8F0;
+            --text: #1E293B;
+            --text-secondary: #64748B;
+            --text-muted: #94A3B8;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-full: 50px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* ===== UTILITY ===== */
+        .page {
+            display: none;
+            animation: fadeIn 0.35s ease;
+        }
+        .page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            box-shadow: var(--shadow-md);
+        }
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text-secondary);
+        }
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+        .btn-ghost {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: var(--surface-alt);
+            color: var(--text);
+        }
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+        .btn-danger:hover {
+            background: #DC2626;
+            border-color: #DC2626;
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            border-color: var(--success);
+        }
+        .btn-success:hover {
+            background: #059669;
+            border-color: #059669;
+        }
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 1rem;
+        }
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: var(--transition);
+            background: var(--surface);
+            color: var(--text);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .avatar-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--primary-light);
+            border: 2px solid var(--border);
+        }
+        .avatar-sm {
+            width: 36px;
+            height: 36px;
+        }
+        .avatar-lg {
+            width: 80px;
+            height: 80px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon {
+            font-size: 3.6rem;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+        .empty-state h3 {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            background: var(--text);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            max-width: 380px;
+        }
+        .toast.success {
+            background: #065F46;
+        }
+        .toast.error {
+            background: #991B1B;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ===== LOGIN PAGE ===== */
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F1F5F9 100%);
+            padding: 20px;
+        }
+        .login-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 36px 32px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid var(--border);
+        }
+        .login-card .logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .login-card .logo .icon-circle {
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+        }
+        .login-card h1 {
+            font-weight: 800;
+            font-size: 1.6rem;
+            letter-spacing: -0.5px;
+            color: var(--text);
+        }
+        .login-card .sub {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ===== TOP BAR ===== */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        .topbar-brand {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .topbar-brand i {
+            font-size: 1.4rem;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .topbar-right .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .topbar-right .user-info .name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .topbar-right .back-btn {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: none;
+            border-radius: var(--radius-full);
+            padding: 6px 16px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .topbar-right .back-btn:hover {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* ===== PROFILE SETUP ===== */
+        .profile-setup .avatar-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .profile-setup .avatar-upload .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--border);
+            background: var(--surface-alt);
+        }
+        .profile-setup .avatar-upload .upload-btn {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .profile-setup .avatar-upload .upload-btn input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* ===== FEED ===== */
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .feed-header h2 {
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: -0.3px;
+        }
+        .feed-header h2 i {
+            color: var(--primary);
+            margin-right: 8px;
+        }
+
+        .post-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .post-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .post-header .author {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text);
+        }
+        .post-header .meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+        .post-subject {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 2px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .post-text {
+            font-size: 0.95rem;
+            margin: 6px 0 10px;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        .post-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 12px;
+        }
+        .post-images img {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .post-images img:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+        }
+        .post-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .post-actions .reply-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+        }
+        .post-actions .reply-toggle:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .post-actions .reply-toggle i {
+            font-size: 0.9rem;
+        }
+
+        /* ===== REPLIES ===== */
+        .replies-container {
+            margin-top: 16px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+            display: none;
+        }
+        .replies-container.open {
+            display: block;
+            animation: fadeIn 0.25s ease;
+        }
+        .reply-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            background: var(--surface-alt);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--primary-light);
+            transition: var(--transition);
+        }
+        .reply-item:hover {
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+        .reply-item .reply-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .reply-item .reply-body .reply-author {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text);
+        }
+        .reply-item .reply-body .reply-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+        .reply-item .reply-body .reply-text {
+            font-size: 0.9rem;
+            margin: 4px 0 6px;
+            word-wrap: break-word;
+        }
+        .reply-item .reply-body .reply-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .reply-item .reply-body .reply-images img {
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        /* ===== REPLY FORM ===== */
+        .reply-form {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .reply-form .reply-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .reply-form .reply-input-row textarea {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 44px;
+            transition: var(--transition);
+            background: var(--surface);
+            color: var(--text);
+        }
+        .reply-form .reply-input-row textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+        }
+        .reply-form .reply-images-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .reply-form .reply-images-preview img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        .reply-form .reply-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 28px 32px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeIn 0.25s ease;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .modal-header h3 {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .modal-header .close {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .modal-header .close:hover {
+            color: var(--text);
+        }
+        .modal .image-preview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 12px;
+        }
+        .modal .image-preview-grid img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            .container {
+                padding: 16px 12px;
+            }
+            .card {
+                padding: 16px;
+            }
+            .topbar {
+                padding: 0 12px;
+                height: 56px;
+            }
+            .topbar-brand {
+                font-size: 1rem;
+            }
+            .topbar-right .user-info .name {
+                display: none;
+            }
+            .topbar-right .back-btn span {
+                display: none;
+            }
+            .post-images img {
+                max-width: 120px;
+                max-height: 120px;
+            }
+            .modal {
+                padding: 20px 16px;
+            }
+            .reply-form .reply-input-row {
+                flex-direction: column;
+            }
+            .feed-header h2 {
+                font-size: 1.1rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+        .text-muted {
+            color: var(--text-muted);
+        }
+        .text-sm {
+            font-size: 0.85rem;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex-center {
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-2 {
+            gap: 8px;
+        }
+        .gap-3 {
+            gap: 12px;
+        }
+        .mt-2 {
+            margin-top: 8px;
+        }
+        .mt-3 {
+            margin-top: 16px;
+        }
+        .mb-2 {
+            margin-bottom: 8px;
+        }
+        .mb-3 {
+            margin-bottom: 16px;
+        }
+        .w-full {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== TOAST CONTAINER ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== PAGE: LOGIN ===== -->
+    <div class="page active" id="page-login">
+        <div class="login-wrapper">
+            <div class="login-card">
+                <div class="logo">
+                    <div class="icon-circle"><i class="fas fa-comments"></i></div>
+                    <h1>Study Circle</h1>
+                    <p class="sub">Ask, reply & learn together</p>
+                </div>
+                <button class="btn btn-primary btn-block" id="btnGoogleSignIn" style="padding:12px;">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
+                <div class="divider">or</div>
+                <div id="authForm">
+                    <div class="form-group">
+                        <label for="authEmail">Email</label>
+                        <input type="email" class="form-input" id="authEmail" placeholder="you@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label for="authPassword">Password</label>
+                        <input type="password" class="form-input" id="authPassword" placeholder="••••••••" />
+                    </div>
+                    <button class="btn btn-primary btn-block" id="btnEmailSignIn" style="justify-content:center;">Sign In</button>
+                    <p class="text-center text-sm text-muted mt-2">
+                        Don't have an account?
+                        <button class="btn btn-ghost btn-sm" id="btnToggleRegister" style="color:var(--primary);font-weight:600;">Register</button>
+                    </p>
+                </div>
+                <p class="text-center text-muted text-sm mt-2" id="authModeLabel">Sign In</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE: PROFILE SETUP ===== -->
+    <div class="page" id="page-profile">
+        <div class="container">
+            <div class="card profile-setup">
+                <h2 style="font-weight:700;margin-bottom:16px;"><i class="fas fa-user-circle" style="color:var(--primary);"></i> Complete Your Profile</h2>
+                <div class="avatar-upload">
+                    <img id="profileAvatarPreview" src="" alt="Avatar" class="avatar-preview" />
+                    <div class="upload-btn btn btn-outline btn-sm">
+                        <i class="fas fa-camera"></i> Upload Photo
+                        <input type="file" accept="image/*" id="avatarFileInput" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="profileName">Full Name</label>
+                    <input type="text" class="form-input" id="profileName" placeholder="Your name" />
+                </div>
+                <div class="form-group">
+                    <label for="profileInstitution">Institution / School</label>
+                    <input type="text" class="form-input" id="profileInstitution" placeholder="e.g., IIT Bombay" />
+                </div>
+                <button class="btn btn-primary btn-block" id="btnSaveProfile" style="justify-content:center;">
+                    <i class="fas fa-check"></i> Save Profile
+                </button>
+                <p class="text-center text-sm text-muted mt-2">
+                    <button class="btn btn-ghost btn-sm" id="btnSkipProfile">Skip for now</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE: COMMUNITY ===== -->
+    <div class="page" id="page-community">
+        <!-- Topbar -->
+        <div class="topbar" id="topbar">
+            <div class="topbar-brand" id="brandHome">
+                <i class="fas fa-comments"></i> Study Circle
+            </div>
+            <div class="topbar-right">
+                <!-- Back to Timer button -->
+                <button class="back-btn" id="backToTimerBtn">
+                    <i class="fas fa-arrow-left"></i> <span>Timer App</span>
+                </button>
+                <div class="user-info" id="userInfo">
+                    <img id="topbarAvatar" src="" alt="Avatar" class="avatar-img avatar-sm" />
+                    <span class="name" id="topbarName">User</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="btnLogout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="feed-header">
+                <h2><i class="fas fa-newspaper"></i> Community Feed</h2>
+                <button class="btn btn-primary" id="btnNewPost">
+                    <i class="fas fa-plus"></i> New Question
+                </button>
+            </div>
+
+            <!-- Feed -->
+            <div id="feedContainer">
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <h3>No questions yet</h3>
+                    <p>Be the first to ask something!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Post Modal -->
+        <div class="modal-overlay" id="newPostModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-pen-fancy" style="color:var(--primary);"></i> Ask a Question</h3>
+                    <button class="close" id="closePostModal">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label for="postSubject">Subject</label>
+                    <select class="form-input" id="postSubject">
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="English">English</option>
+                        <option value="History">History</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="postText">Question</label>
+                    <textarea class="form-input" id="postText" rows="4" placeholder="Describe your question in detail..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Attach Images</label>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="btn btn-outline btn-sm" id="postImageBtn">
+                            <i class="fas fa-image"></i> Add Images
+                        </button>
+                        <input type="file" accept="image/*" multiple id="postImageInput" style="display:none;" />
+                    </div>
+                    <div class="image-preview-grid" id="postImagePreview"></div>
+                </div>
+                <button class="btn btn-primary btn-block" id="btnSubmitPost" style="justify-content:center;">
+                    <i class="fas fa-paper-plane"></i> Post Question
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script>
+        (function() {
+            // ========== FIREBASE CONFIG ==========
+            const firebaseConfig = {
+                apiKey: "AIzaSyBjyOOL1Y9qGzql_FWvYfjxGx1FukoUH0I",
+                authDomain: "kvs-memories.firebaseapp.com",
+                databaseURL: "https://kvs-memories-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "kvs-memories",
+                storageBucket: "kvs-memories.firebasestorage.app",
+                messagingSenderId: "62349854159",
+                appId: "1:62349854159:web:0d26b214c54dcf00c5beba",
+                measurementId: "G-WB76L4JGET"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+            // ========== IMGBB API KEY (YOURS) ==========
+            const IMGBB_API_KEY = '634fa2a7689294e6add82ae3f6e334d9';
+
+            // ========== DOM REFS ==========
+            const $ = (s) => document.querySelector(s);
+            const $$ = (s) => document.querySelectorAll(s);
+
+            const pageLogin = $('#page-login');
+            const pageProfile = $('#page-profile');
+            const pageCommunity = $('#page-community');
+            const allPages = [pageLogin, pageProfile, pageCommunity];
+
+            const toastContainer = $('#toastContainer');
+
+            // Auth
+            const btnGoogle = $('#btnGoogleSignIn');
+            const btnEmail = $('#btnEmailSignIn');
+            const btnToggle = $('#btnToggleRegister');
+            const authEmail = $('#authEmail');
+            const authPass = $('#authPassword');
+            const authModeLabel = $('#authModeLabel');
+
+            // Profile
+            const profileName = $('#profileName');
+            const profileInst = $('#profileInstitution');
+            const profileAvatarPreview = $('#profileAvatarPreview');
+            const avatarFileInput = $('#avatarFileInput');
+            const btnSaveProfile = $('#btnSaveProfile');
+            const btnSkipProfile = $('#btnSkipProfile');
+
+            // Community
+            const feedContainer = $('#feedContainer');
+            const btnNewPost = $('#btnNewPost');
+            const newPostModal = $('#newPostModal');
+            const closePostModal = $('#closePostModal');
+            const postSubject = $('#postSubject');
+            const postText = $('#postText');
+            const postImageInput = $('#postImageInput');
+            const postImageBtn = $('#postImageBtn');
+            const postImagePreview = $('#postImagePreview');
+            const btnSubmitPost = $('#btnSubmitPost');
+            const topbarName = $('#topbarName');
+            const topbarAvatar = $('#topbarAvatar');
+            const btnLogout = $('#btnLogout');
+            const brandHome = $('#brandHome');
+            const backToTimerBtn = $('#backToTimerBtn');
+
+            // ========== STATE ==========
+            let currentUser = null;
+            let currentProfile = null; // { name, institution, avatarUrl }
+            let postImageFiles = [];
+            let replyImageCache = {}; // postId -> [urls]
+            let postsUnsubscribe = null;
+            let replyUnsubscribers = {};
+
+            // ========== TOAST ==========
+            function showToast(msg, type = '') {
+                const t = document.createElement('div');
+                t.className = `toast ${type}`;
+                t.textContent = msg;
+                toastContainer.appendChild(t);
+                setTimeout(() => {
+                    t.style.opacity = '0';
+                    t.style.transition = 'opacity 0.3s';
+                    setTimeout(() => t.remove(), 300);
+                }, 3000);
+            }
+
+            // ========== NAVIGATION ==========
+            function navigateTo(pageName) {
+                allPages.forEach(p => p.classList.remove('active'));
+                const map = { 'login': pageLogin, 'profile': pageProfile, 'community': pageCommunity };
+                const target = map[pageName];
+                if (target) target.classList.add('active');
+            }
+
+            // ========== IMAGE UPLOAD TO IMGBB ==========
+            async function uploadImageToImgBB(file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.success) return data.data.url;
+                else throw new Error('Image upload failed: ' + (data.error?.message || ''));
+            }
+
+            // ========== AUTH ==========
+            auth.onAuthStateChanged(async (user) => {
+                currentUser = user;
+                if (user) {
+                    try {
+                        const doc = await db.collection('users').doc(user.uid).get();
+                        if (doc.exists && doc.data().name) {
+                            currentProfile = doc.data();
+                            navigateTo('community');
+                            initCommunity();
+                        } else {
+                            navigateTo('profile');
+                            if (user.displayName) profileName.value = user.displayName;
+                        }
+                    } catch (e) {
+                        showToast('Error loading profile: ' + e.message, 'error');
+                        navigateTo('profile');
+                    }
+                } else {
+                    currentProfile = null;
+                    stopCommunityListeners();
+                    navigateTo('login');
+                }
+            });
+
+            btnGoogle.addEventListener('click', async () => {
+                try {
+                    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+                    showToast('Signed in', 'success');
+                } catch (e) { showToast(e.message, 'error'); }
+            });
+
+            let authMode = 'signin';
+            btnToggle.addEventListener('click', () => {
+                if (authMode === 'signin') {
+                    authMode = 'register';
+                    btnEmail.textContent = 'Create Account';
+                    authModeLabel.textContent = 'Register';
+                    btnToggle.textContent = 'Sign in instead';
+                } else {
+                    authMode = 'signin';
+                    btnEmail.textContent = 'Sign In';
+                    authModeLabel.textContent = 'Sign In';
+                    btnToggle.textContent = 'Register';
+                }
+            });
+
+            btnEmail.addEventListener('click', async () => {
+                const email = authEmail.value.trim();
+                const pass = authPass.value;
+                if (!email || !pass) return showToast('Fill all fields', 'error');
+                try {
+                    if (authMode === 'register') {
+                        await auth.createUserWithEmailAndPassword(email, pass);
+                        showToast('Account created!', 'success');
+                    } else {
+                        await auth.signInWithEmailAndPassword(email, pass);
+                        showToast('Signed in', 'success');
+                    }
+                } catch (e) { showToast(e.message, 'error'); }
+            });
+
+            btnLogout.addEventListener('click', async () => {
+                stopCommunityListeners();
+                await auth.signOut();
+                showToast('Signed out', 'success');
+            });
+
+            brandHome.addEventListener('click', () => {
+                if (currentUser) navigateTo('community');
+            });
+
+            // ========== PROFILE ==========
+            let avatarFile = null;
+            avatarFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                avatarFile = file;
+                const reader = new FileReader();
+                reader.onload = (ev) => { profileAvatarPreview.src = ev.target.result; };
+                reader.readAsDataURL(file);
+            });
+
+            btnSaveProfile.addEventListener('click', async () => {
+                const name = profileName.value.trim();
+                const institution = profileInst.value.trim();
+                if (!name) return showToast('Please enter your name', 'error');
+
+                let avatarUrl = '';
+                if (avatarFile) {
+                    try {
+                        avatarUrl = await uploadImageToImgBB(avatarFile);
+                    } catch (e) {
+                        showToast('Image upload failed, using default avatar', 'error');
+                    }
+                }
+
+                const profileData = {
+                    name,
+                    institution: institution || '',
+                    avatarUrl: avatarUrl || '',
+                    email: currentUser.email,
+                    uid: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                try {
+                    await db.collection('users').doc(currentUser.uid).set(profileData, { merge: true });
+                    currentProfile = profileData;
+                    showToast('Profile saved!', 'success');
+                    navigateTo('community');
+                    initCommunity();
+                } catch (e) {
+                    showToast('Error saving profile: ' + e.message, 'error');
+                }
+            });
+
+            btnSkipProfile.addEventListener('click', () => {
+                const profileData = {
+                    name: currentUser.displayName || 'User',
+                    institution: '',
+                    avatarUrl: '',
+                    email: currentUser.email,
+                    uid: currentUser.uid,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                db.collection('users').doc(currentUser.uid).set(profileData, { merge: true })
+                    .then(() => {
+                        currentProfile = profileData;
+                        navigateTo('community');
+                        initCommunity();
+                    })
+                    .catch(e => showToast('Error: ' + e.message, 'error'));
+            });
+
+            // ========== COMMUNITY ==========
+            function stopCommunityListeners() {
+                if (postsUnsubscribe) { postsUnsubscribe();
+                    postsUnsubscribe = null; }
+                Object.values(replyUnsubscribers).forEach(fn => fn());
+                replyUnsubscribers = {};
+            }
+
+            function initCommunity() {
+                if (currentProfile) {
+                    topbarName.textContent = currentProfile.name || 'User';
+                    topbarAvatar.src = currentProfile.avatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(
+                        currentProfile.name || 'User') + '&background=4F46E5&color=fff&size=36';
+                }
+                loadFeed();
+            }
+
+            function loadFeed() {
+                if (postsUnsubscribe) postsUnsubscribe();
+                const q = db.collection('posts').orderBy('timestamp', 'desc');
+                postsUnsubscribe = q.onSnapshot((snapshot) => {
+                    const posts = [];
+                    snapshot.forEach(doc => {
+                        posts.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderFeed(posts);
+                }, (error) => {
+                    showToast('Error loading feed: ' + error.message, 'error');
+                });
+            }
+
+            function renderFeed(posts) {
+                const container = feedContainer;
+                if (posts.length === 0) {
+                    container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <h3>No questions yet</h3>
+                        <p>Be the first to ask something!</p>
+                    </div>
+                `;
+                    return;
+                }
+                let html = '';
+                posts.forEach(post => {
+                    const authorName = post.authorName || 'Unknown';
+                    const authorAvatar = post.authorAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(
+                        authorName) + '&background=4F46E5&color=fff&size=36';
+                    const time = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : '';
+                    const subject = post.subject || 'General';
+                    const images = post.images || [];
+                    const replyCount = post.replyCount || 0;
+
+                    html += `
+                    <div class="post-card" data-postid="${post.id}">
+                        <div class="post-header">
+                            <img src="${authorAvatar}" class="avatar-img avatar-sm" alt="avatar" />
+                            <span class="author">${escapeHtml(authorName)}</span>
+                            <span class="meta">${time}</span>
+                        </div>
+                        <div class="post-subject">${escapeHtml(subject)}</div>
+                        <div class="post-text">${escapeHtml(post.text)}</div>
+                        ${images.length ? `<div class="post-images">${images.map(url => `<img src="${url}" alt="image" />`).join('')}</div>` : ''}
+                        <div class="post-actions">
+                            <button class="reply-toggle" data-postid="${post.id}">
+                                <i class="fas fa-reply"></i> <span class="reply-count">${replyCount}</span> replies
+                            </button>
+                            <button class="btn btn-ghost btn-sm reply-btn" data-postid="${post.id}">
+                                <i class="fas fa-comment"></i> Reply
+                            </button>
+                        </div>
+                        <div class="replies-container" id="replies-${post.id}">
+                            <!-- replies loaded dynamically -->
+                        </div>
+                    </div>
+                `;
+                });
+                container.innerHTML = html;
+
+                // Attach events
+                container.querySelectorAll('.reply-toggle, .reply-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const postId = btn.dataset.postid;
+                        toggleReplies(postId);
+                        if (btn.classList.contains('reply-btn')) {
+                            const container = document.getElementById('replies-' + postId);
+                            if (container) {
+                                container.classList.add('open');
+                                const ta = container.querySelector('.reply-textarea');
+                                if (ta) ta.focus();
+                            }
+                        }
+                    });
+                });
+
+                // Pre-initialize reply containers (but not listeners until opened)
+                posts.forEach(post => {
+                    const container = document.getElementById('replies-' + post.id);
+                    if (container && !replyUnsubscribers[post.id]) {
+                        // Just a placeholder, will load on first open
+                        container.innerHTML = `<div class="text-muted text-sm">Loading replies...</div>`;
+                    }
+                });
+            }
+
+            function toggleReplies(postId) {
+                const container = document.getElementById('replies-' + postId);
+                if (!container) return;
+                const isOpen = container.classList.contains('open');
+                if (!isOpen) {
+                    container.classList.add('open');
+                    if (!replyUnsubscribers[postId]) {
+                        loadReplies(postId);
+                    }
+                } else {
+                    container.classList.remove('open');
+                }
+            }
+
+            function loadReplies(postId) {
+                const container = document.getElementById('replies-' + postId);
+                if (!container) return;
+
+                const q = db.collection('posts').doc(postId).collection('replies')
+                    .orderBy('timestamp', 'asc');
+                const unsubscribe = q.onSnapshot((snapshot) => {
+                    const replies = [];
+                    snapshot.forEach(doc => {
+                        replies.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderReplies(postId, replies);
+                }, (error) => {
+                    showToast('Error loading replies: ' + error.message, 'error');
+                });
+                replyUnsubscribers[postId] = unsubscribe;
+            }
+
+            function renderReplies(postId, replies) {
+                const container = document.getElementById('replies-' + postId);
+                if (!container) return;
+
+                let repliesHtml = '';
+                if (replies.length === 0) {
+                    repliesHtml = `<div class="text-muted text-sm" style="padding:4px 0;">No replies yet.</div>`;
+                } else {
+                    repliesHtml = replies.map(r => {
+                        const rAuthor = r.authorName || 'Unknown';
+                        const rAvatar = r.authorAvatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(
+                            rAuthor) + '&background=4F46E5&color=fff&size=36';
+                        const rTime = r.timestamp ? new Date(r.timestamp.seconds * 1000).toLocaleString() : '';
+                        const rImages = r.images || [];
+                        return `
+                        <div class="reply-item">
+                            <img src="${rAvatar}" class="avatar-img avatar-sm" alt="avatar" />
+                            <div class="reply-body">
+                                <div>
+                                    <span class="reply-author">${escapeHtml(rAuthor)}</span>
+                                    <span class="reply-time">${rTime}</span>
+                                </div>
+                                <div class="reply-text">${escapeHtml(r.text)}</div>
+                                ${rImages.length ? `<div class="reply-images">${rImages.map(url => `<img src="${url}" alt="image" />`).join('')}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                }
+
+                container.innerHTML = `
+                    <div class="replies-list">${repliesHtml}</div>
+                    <div class="reply-form">
+                        <div class="reply-input-row">
+                            <textarea placeholder="Write a reply..." class="reply-textarea" data-postid="${postId}"></textarea>
+                        </div>
+                        <div class="reply-actions">
+                            <button class="btn btn-sm btn-primary reply-submit" data-postid="${postId}"><i class="fas fa-paper-plane"></i> Reply</button>
+                            <button class="btn btn-sm btn-outline reply-image-btn" data-postid="${postId}"><i class="fas fa-image"></i></button>
+                            <input type="file" accept="image/*" multiple class="reply-image-input hidden" data-postid="${postId}" />
+                        </div>
+                        <div class="reply-images-preview" id="replyPreview-${postId}"></div>
+                    </div>
+                `;
+
+                // Attach reply events
+                const textarea = container.querySelector('.reply-textarea');
+                const submitBtn = container.querySelector('.reply-submit');
+                const imageBtn = container.querySelector('.reply-image-btn');
+                const imageInput = container.querySelector('.reply-image-input');
+                const previewContainer = container.querySelector('.reply-images-preview');
+
+                if (submitBtn && textarea) {
+                    submitBtn.addEventListener('click', () => {
+                        const text = textarea.value.trim();
+                        if (!text) return showToast('Please type a reply', 'error');
+                        submitReply(postId, text);
+                    });
+                    textarea.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            submitBtn.click();
+                        }
+                    });
+                }
+
+                if (imageBtn && imageInput) {
+                    imageBtn.addEventListener('click', () => imageInput.click());
+                    imageInput.addEventListener('change', async (e) => {
+                        const files = Array.from(e.target.files);
+                        if (!files.length) return;
+                        try {
+                            const urls = await Promise.all(files.map(f => uploadImageToImgBB(f)));
+                            replyImageCache[postId] = (replyImageCache[postId] || []).concat(urls);
+                            if (previewContainer) {
+                                previewContainer.innerHTML = urls.map(url =>
+                                    `<img src="${url}" />`).join('');
+                            }
+                            showToast('Images uploaded', 'success');
+                        } catch (err) {
+                            showToast('Image upload failed: ' + err.message, 'error');
+                        }
+                    });
+                }
+            }
+
+            async function submitReply(postId, text) {
+                if (!currentUser || !currentProfile) return showToast('Please log in', 'error');
+
+                const images = replyImageCache[postId] || [];
+                // Clear cache after use
+                delete replyImageCache[postId];
+
+                const replyData = {
+                    text,
+                    images,
+                    authorId: currentUser.uid,
+                    authorName: currentProfile.name || 'User',
+                    authorAvatar: currentProfile.avatarUrl || '',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                };
+
+                try {
+                    await db.collection('posts').doc(postId).collection('replies').add(replyData);
+                    await db.collection('posts').doc(postId).update({
+                        replyCount: firebase.firestore.FieldValue.increment(1)
+                    });
+                    showToast('Reply posted!', 'success');
+                    // Clear textarea and preview
+                    const container = document.getElementById('replies-' + postId);
+                    if (container) {
+                        const ta = container.querySelector('.reply-textarea');
+                        if (ta) ta.value = '';
+                        const preview = container.querySelector('.reply-images-preview');
+                        if (preview) preview.innerHTML = '';
+                    }
+                } catch (e) {
+                    showToast('Error posting reply: ' + e.message, 'error');
+                }
+            }
+
+            // ========== NEW POST ==========
+            btnNewPost.addEventListener('click', () => {
+                newPostModal.classList.add('open');
+                postText.value = '';
+                postImagePreview.innerHTML = '';
+                postImageFiles = [];
+                document.getElementById('postImageInput').value = '';
+            });
+
+            closePostModal.addEventListener('click', () => {
+                newPostModal.classList.remove('open');
+            });
+            newPostModal.addEventListener('click', (e) => {
+                if (e.target === newPostModal) newPostModal.classList.remove('open');
+            });
+
+            postImageBtn.addEventListener('click', () => {
+                document.getElementById('postImageInput').click();
+            });
+
+            document.getElementById('postImageInput').addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                postImageFiles = files;
+                const preview = postImagePreview;
+                preview.innerHTML = '';
+                files.forEach(f => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const img = document.createElement('img');
+                        img.src = ev.target.result;
+                        preview.appendChild(img);
+                    };
+                    reader.readAsDataURL(f);
+                });
+            });
+
+            btnSubmitPost.addEventListener('click', async () => {
+                const subject = postSubject.value;
+                const text = postText.value.trim();
+                if (!text) return showToast('Please describe your question', 'error');
+
+                let imageUrls = [];
+                if (postImageFiles.length) {
+                    try {
+                        for (let f of postImageFiles) {
+                            const url = await uploadImageToImgBB(f);
+                            imageUrls.push(url);
+                        }
+                    } catch (e) {
+                        showToast('Image upload failed: ' + e.message, 'error');
+                        return;
+                    }
+                }
+
+                const postData = {
+                    subject,
+                    text,
+                    images: imageUrls,
+                    authorId: currentUser.uid,
+                    authorName: currentProfile.name || 'User',
+                    authorAvatar: currentProfile.avatarUrl || '',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    replyCount: 0,
+                };
+
+                try {
+                    await db.collection('posts').add(postData);
+                    showToast('Question posted!', 'success');
+                    newPostModal.classList.remove('open');
+                    postImageFiles = [];
+                    postImagePreview.innerHTML = '';
+                    document.getElementById('postImageInput').value = '';
+                } catch (e) {
+                    showToast('Error posting: ' + e.message, 'error');
+                }
+            });
+
+            // ========== BACK TO TIMER APP ==========
+            backToTimerBtn.addEventListener('click', () => {
+                window.location.href = 'index (4).html'; // adjust if your timer file has a different name
+            });
+
+            // ========== UTILITY ==========
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // ========== INIT ==========
+            // Auth listener already handles navigation
+            console.log('✅ Study Circle loaded with ImgBB key');
+        })();
+    </script>
+</body>
+</html>
