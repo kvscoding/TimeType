@@ -1605,30 +1605,38 @@
                 });
             }
 
-            $$('#navLinks button').forEach(btn => {
-                btn.addEventListener('click', () => {
+                        $$('#navLinks button, #navLinks a').forEach(btn => {
+                btn.addEventListener('click', (e) => {
                     const page = btn.dataset.page;
+                    const href = btn.getAttribute('href');
+
+                    // If it's a traditional link pointing to a local file, let it redirect naturally
+                    if (href && href.endsWith('.html')) {
+                        return; 
+                    }
+
                     if (page === 'session-setup' && currentSession && !currentSession.submitted) {
                         if (confirm('You have an active session. Navigating away will lose unsaved progress. Continue?')) {
                             stopTimer();
                             currentSession = null;
                             localStorage.removeItem('qanalyzer_active_session');
                             navigateTo(page);
+                        } else {
+                            e.preventDefault();
                         }
                     } else if (page === 'session-active' && currentSession && !currentSession.submitted) {
                         navigateTo('session-active');
                     } else if (page === 'session-active' && (!currentSession || currentSession.submitted)) {
                         navigateTo('session-setup');
-                    } else {
+                    } else if (page) {
                         navigateTo(page);
                     }
+                    
                     if (page === 'history') loadHistory();
                     if (page === 'dashboard') loadDashboard();
-                    if (targetPage.endsWith('.html')) {
-    window.location.href = targetPage; // This opens com.html in the same folder
-}
                 });
             });
+            
 
             $('#brandHome').addEventListener('click', () => { if (currentUser) navigateTo('dashboard'); });
 
