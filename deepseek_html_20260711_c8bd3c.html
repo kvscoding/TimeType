@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QuizForge · Chemical Bonding</title>
+
+    <!-- ===== FONTS ===== -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet" />
+
+    <!-- ===== FIREBASE (compat) ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+    </script>
+
+    <style>
+        /* ============================================================
+               RESET & BASE
+               ============================================================ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-active: rgba(255, 215, 0, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --accent-gold: #fbbf24;
+            --accent-gold-dark: #d97706;
+            --accent-green: #34d399;
+            --accent-red: #f87171;
+            --shadow-glow: 0 0 60px rgba(251, 191, 36, 0.06);
+            --radius-card: 28px;
+            --radius-btn: 40px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-primary);
+            background-image:
+                radial-gradient(ellipse at 20% 30%, rgba(251, 191, 36, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 70%, rgba(251, 191, 36, 0.02) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(10, 14, 26, 1) 0%, transparent 100%);
+            background-attachment: fixed;
+        }
+
+        /* ============================================================
+               SCROLLBAR
+               ============================================================ */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(251, 191, 36, 0.2);
+            border-radius: 10px;
+        }
+
+        /* ============================================================
+               APP CONTAINER
+               ============================================================ */
+        #app {
+            width: 100%;
+            max-width: 1100px;
+            position: relative;
+        }
+
+        /* ============================================================
+               SCREENS
+               ============================================================ */
+        .screen {
+            display: none;
+            animation: fadeUp 0.5s ease;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulseGlow {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(251, 191, 36, 0.05);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(251, 191, 36, 0.12);
+            }
+        }
+
+        /* ============================================================
+               GLASS CARD
+               ============================================================ */
+        .glass {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-glow);
+            transition: var(--transition);
+        }
+
+        .glass:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        /* ============================================================
+               LOGIN SCREEN
+               ============================================================ */
+        #loginScreen {
+            max-width: 440px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .login-card {
+            padding: 48px 40px 40px;
+            text-align: center;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .login-brand {
+            font-size: 48px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .login-title {
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .login-sub {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 400;
+            margin-bottom: 32px;
+            letter-spacing: 0.3px;
+        }
+
+        .login-input-group {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .login-input-group input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--border-subtle);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .login-input-group input:focus {
+            border-color: var(--accent-gold);
+            background: rgba(255, 255, 255, 0.07);
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.06);
+        }
+
+        .login-input-group input::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .login-input-group .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .login-input-group input {
+            padding-left: 48px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none;
+            border-radius: 16px;
+            color: #0a0e1a;
+            font-size: 17px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 8px 30px rgba(251, 191, 36, 0.15);
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(251, 191, 36, 0.25);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            padding: 12px 32px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-btn);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-gold {
+            padding: 12px 32px;
+            background: transparent;
+            border: 2px solid rgba(251, 191, 36, 0.25);
+            border-radius: var(--radius-btn);
+            color: var(--accent-gold);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-outline-gold:hover {
+            background: rgba(251, 191, 36, 0.08);
+            border-color: var(--accent-gold);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger-outline {
+            padding: 8px 20px;
+            background: transparent;
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: var(--radius-btn);
+            color: var(--accent-red);
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-danger-outline:hover {
+            background: rgba(248, 113, 113, 0.08);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+
+        /* ============================================================
+               DASHBOARD
+               ============================================================ */
+        #dashboardScreen .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .dashboard-card {
+            padding: 32px 30px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-glow);
+            transition: var(--transition);
+        }
+
+        .dashboard-card:hover {
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.05));
+            border: 2px solid rgba(251, 191, 36, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            flex-shrink: 0;
+        }
+
+        .profile-info h2 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .profile-info .handle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 16px 14px;
+            text-align: center;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .stat-item .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: -0.5px;
+        }
+
+        .stat-item .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-item .stat-value.green {
+            color: var(--accent-green);
+        }
+
+        .stat-item .stat-value.muted {
+            color: var(--text-secondary);
+        }
+
+        .dashboard-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .dashboard-actions .btn-primary {
+            width: 100%;
+            padding: 18px;
+            font-size: 17px;
+        }
+
+        .dashboard-actions .btn-secondary {
+            width: 100%;
+            text-align: center;
+            padding: 18px;
+            font-size: 15px;
+        }
+
+        .dashboard-actions .action-row {
+            display: flex;
+            gap: 14px;
+        }
+
+        .dashboard-actions .action-row .btn-secondary {
+            flex: 1;
+            text-align: center;
+        }
+
+        .logout-wrap {
+            margin-top: 8px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* ============================================================
+               QUIZ SCREEN
+               ============================================================ */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .quiz-meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quiz-meta .q-counter {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .quiz-meta .q-counter span {
+            color: var(--text-primary);
+            font-size: 18px;
+        }
+
+        .quiz-meta .score-display {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--accent-gold);
+            background: rgba(251, 191, 36, 0.08);
+            padding: 4px 18px;
+            border-radius: 30px;
+            border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .quiz-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 4px 0 20px;
+        }
+
+        .quiz-progress .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .question-text {
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.6;
+            margin-bottom: 28px;
+            color: var(--text-primary);
+            min-height: 60px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 16px 22px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            text-align: left;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            line-height: 1.4;
+            min-height: 60px;
+        }
+
+        .option-btn .label {
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-size: 14px;
+            min-width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(251, 191, 36, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(251, 191, 36, 0.08);
+        }
+
+        .option-btn:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(251, 191, 36, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .option-btn.selected {
+            border-color: var(--accent-gold);
+            background: rgba(251, 191, 36, 0.08);
+        }
+
+        .option-btn.correct {
+            border-color: var(--accent-green);
+            background: rgba(52, 211, 153, 0.10);
+        }
+
+        .option-btn.correct .label {
+            background: var(--accent-green);
+            color: #0a0e1a;
+            border-color: var(--accent-green);
+        }
+
+        .option-btn.wrong {
+            border-color: var(--accent-red);
+            background: rgba(248, 113, 113, 0.10);
+        }
+
+        .option-btn.wrong .label {
+            background: var(--accent-red);
+            color: #0a0e1a;
+            border-color: var(--accent-red);
+        }
+
+        .option-btn.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .option-btn.disabled:hover {
+            transform: none;
+            border-color: var(--border-subtle);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* ============================================================
+               GAME OVER
+               ============================================================ */
+        .gameover-card {
+            padding: 48px 40px 40px;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .gameover-card .icon {
+            font-size: 64px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .gameover-card h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+
+        .gameover-card .sub {
+            color: var(--text-secondary);
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .gameover-card .final-score {
+            font-size: 52px;
+            font-weight: 900;
+            color: var(--accent-gold);
+            margin: 16px 0 8px;
+            letter-spacing: -1px;
+        }
+
+        .gameover-card .final-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .gameover-card .gameover-actions {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-top: 28px;
+            flex-wrap: wrap;
+        }
+
+        .gameover-card .gameover-actions .btn-primary {
+            width: auto;
+            padding: 14px 40px;
+        }
+
+        .gameover-card .gameover-actions .btn-secondary {
+            padding: 14px 32px;
+        }
+
+        .gameover-card .note {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .gameover-card .note .highlight {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        /* ============================================================
+               LEADERBOARD
+               ============================================================ */
+        .leaderboard-card {
+            padding: 32px 30px 30px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .leaderboard-header h2 {
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .leaderboard-header h2 span {
+            font-size: 28px;
+        }
+
+        .lb-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .lb-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: var(--transition);
+        }
+
+        .lb-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--border-subtle);
+        }
+
+        .lb-item .rank {
+            font-weight: 700;
+            font-size: 16px;
+            min-width: 36px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .lb-item .rank.gold {
+            color: var(--accent-gold);
+        }
+        .lb-item .rank.silver {
+            color: #94a3b8;
+        }
+        .lb-item .rank.bronze {
+            color: #cd7f32;
+        }
+
+        .lb-item .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.02));
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            flex-shrink: 0;
+        }
+
+        .lb-item .info {
+            flex: 1;
+        }
+
+        .lb-item .info .name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .lb-item .info .sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .lb-item .score {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--accent-gold);
+        }
+
+        .lb-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .lb-empty .big {
+            font-size: 48px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .lb-empty .msg {
+            font-size: 16px;
+        }
+
+        /* ============================================================
+               RESPONSIVE
+               ============================================================ */
+        @media (max-width: 860px) {
+            #dashboardScreen .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+
+            .question-text {
+                font-size: 19px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .login-card {
+                padding: 32px 24px 28px;
+            }
+
+            .dashboard-card {
+                padding: 24px 20px;
+            }
+
+            .profile-header {
+                gap: 14px;
+            }
+
+            .profile-avatar {
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
+            }
+
+            .profile-info h2 {
+                font-size: 17px;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+            }
+
+            .stat-item {
+                padding: 12px 8px;
+            }
+
+            .stat-item .stat-value {
+                font-size: 18px;
+            }
+
+            .stat-item .stat-label {
+                font-size: 10px;
+            }
+
+            .question-text {
+                font-size: 17px;
+                min-height: 40px;
+            }
+
+            .option-btn {
+                padding: 14px 16px;
+                font-size: 14px;
+                min-height: 50px;
+            }
+
+            .gameover-card {
+                padding: 32px 24px 28px;
+            }
+
+            .gameover-card .final-score {
+                font-size: 38px;
+            }
+
+            .leaderboard-card {
+                padding: 24px 18px 22px;
+            }
+
+            .lb-item {
+                padding: 10px 14px;
+            }
+
+            .quiz-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .quiz-meta {
+                justify-content: space-between;
+            }
+
+            .gameover-card .gameover-actions {
+                flex-direction: column;
+            }
+
+            .gameover-card .gameover-actions .btn-primary,
+            .gameover-card .gameover-actions .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
+
+            .dashboard-actions .action-row {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .login-title {
+                font-size: 21px;
+            }
+            .login-card {
+                padding: 24px 16px 20px;
+            }
+        }
+
+        /* ============================================================
+               TOAST / NOTIFICATION
+               ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 14px 28px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            pointer-events: none;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+
+        .toast .toast-icon {
+            margin-right: 10px;
+        }
+
+        /* ============================================================
+               LOADING SHIMMER
+               ============================================================ */
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 25%, rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.02) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* ============================================================
+               UTILITY
+               ============================================================ */
+        .text-gold {
+            color: var(--accent-gold);
+        }
+        .text-green {
+            color: var(--accent-green);
+        }
+        .text-red {
+            color: var(--accent-red);
+        }
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+        .text-muted {
+            color: var(--text-muted);
+        }
+        .fw-700 {
+            font-weight: 700;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mt-20 {
+            margin-top: 20px;
+        }
+        .gap-8 {
+            gap: 8px;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">
+        <span class="toast-icon">✨</span>
+        <span id="toastMessage">Welcome!</span>
+    </div>
+
+    <!-- ===== APP ===== -->
+    <div id="app">
+
+        <!-- ========== LOGIN SCREEN ========== -->
+        <div class="screen active" id="loginScreen">
+            <div class="login-card">
+                <span class="login-brand">🧪</span>
+                <div class="login-title">QuizForge</div>
+                <div class="login-sub">Chemical Bonding · 143 Questions</div>
+
+                <div class="login-input-group">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="loginName" placeholder="Enter your name" maxlength="30" autofocus />
+                </div>
+
+                <button class="btn-primary" id="loginBtn">Start Journey →</button>
+
+                <div style="margin-top:16px;font-size:13px;color:var(--text-muted);">
+                    Your score will be saved on the leaderboard
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== DASHBOARD SCREEN ========== -->
+        <div class="screen" id="dashboardScreen">
+            <div class="dashboard-grid">
+                <!-- Left: Profile -->
+                <div class="dashboard-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="dashAvatar">U</div>
+                        <div class="profile-info">
+                            <h2 id="dashName">User</h2>
+                            <div class="handle" id="dashHandle">⚡ Quiz Master</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <div class="stat-value green" id="dashScore">0</div>
+                            <div class="stat-label">🏆 Score</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="dashRank">—</div>
+                            <div class="stat-label">📊 Rank</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value muted" id="dashGames">0</div>
+                            <div class="stat-label">🎮 Games</div>
+                        </div>
+                    </div>
+
+                    <div class="logout-wrap">
+                        <button class="btn-danger-outline" id="logoutBtn">← Sign Out</button>
+                    </div>
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="dashboard-card" style="display:flex;flex-direction:column;justify-content:center;">
+                    <div class="dashboard-actions">
+                        <button class="btn-primary" id="playBtn" style="font-size:18px;padding:20px;">
+                            ⚡ Play Quiz
+                        </button>
+                        <button class="btn-secondary" id="leaderboardBtn" style="font-size:15px;padding:18px;">
+                            📋 View Leaderboard
+                        </button>
+                        <div style="margin-top:8px;font-size:13px;color:var(--text-muted);text-align:center;" id="dashStatus">
+                            Ready to challenge yourself?
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== QUIZ SCREEN ========== -->
+        <div class="screen" id="quizScreen">
+            <div class="glass" style="padding:28px 30px 30px;">
+                <div class="quiz-header">
+                    <div class="quiz-meta">
+                        <div class="q-counter">Question <span id="qNum">1</span> / <span id="qTotal">143</span></div>
+                        <div class="score-display">⭐ <span id="qScore">0</span> pts</div>
+                    </div>
+                    <button class="btn-danger-outline" id="quitQuizBtn" style="padding:6px 18px;font-size:13px;">✕ Quit</button>
+                </div>
+
+                <div class="quiz-progress">
+                    <div class="fill" id="qProgress" style="width:0%;"></div>
+                </div>
+
+                <div class="question-text" id="qText">Loading question…</div>
+
+                <div class="options-grid" id="optionsGrid">
+                    <button class="option-btn" data-idx="0"><span class="label">A</span><span class="text">—</span></button>
+                    <button class="option-btn" data-idx="1"><span class="label">B</span><span class="text">—</span></button>
+                    <button class="option-btn" data-idx="2"><span class="label">C</span><span class="text">—</span></button>
+                    <button class="option-btn" data-idx="3"><span class="label">D</span><span class="text">—</span></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== GAME OVER SCREEN ========== -->
+        <div class="screen" id="gameOverScreen">
+            <div class="gameover-card">
+                <span class="icon" id="goIcon">😢</span>
+                <h2 id="goTitle">Game Over</h2>
+                <div class="sub" id="goSub">You answered 0 questions correctly.</div>
+                <div class="final-score" id="goScore">0</div>
+                <div class="final-label">points earned</div>
+
+                <div class="gameover-actions">
+                    <button class="btn-primary" id="goPlayAgain">🔄 Play Again</button>
+                    <button class="btn-secondary" id="goDashboard">📊 Dashboard</button>
+                </div>
+
+                <div class="note" id="goNote">
+                    💡 <span class="highlight">First game</span> counts toward leaderboard.
+                    Practice games are for fun!
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== LEADERBOARD SCREEN ========== -->
+        <div class="screen" id="leaderboardScreen">
+            <div class="leaderboard-card">
+                <div class="leaderboard-header">
+                    <h2><span>🏅</span> Leaderboard</h2>
+                    <button class="btn-secondary" id="lbBackBtn" style="padding:8px 24px;">← Back</button>
+                </div>
+
+                <div class="lb-list" id="lbList">
+                    <div class="lb-empty">
+                        <span class="big">📭</span>
+                        <div class="msg">No players yet. Be the first!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT
+    ============================================================ -->
+    <script>
+        // ============================================================
+        //  FIREBASE CONFIG — REPLACE WITH YOUR OWN
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoKeyReplaceMe",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // ============================================================
+        //  INIT FIREBASE
+        // ============================================================
+        let db = null;
+        let firebaseReady = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            // Enable offline persistence
+            db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+            firebaseReady = true;
+            console.log('🔥 Firebase ready');
+        } catch (e) {
+            console.warn('⚠️ Firebase not configured — using localStorage fallback');
+            // Fallback: use localStorage
+        }
+
+        // ============================================================
+        //  QUESTION DATA (143 questions)
+        // ============================================================
+        const QUESTIONS = [
+            // Q1–Q143 as provided
+            { q: "The formation of a chemical bond is accompanied by", opts: ["Decrease in energy", "Increase in energy",
+                    "Neither increase nor decrease in energy", "None of these"
+                ], ans: 0 },
+            { q: "Chemical bond implies", opts: ["Attraction", "Repulsion", "Neither attraction nor repulsion",
+                    "Both (1) and (2)"
+                ], ans: 0 },
+            { q: "The major cause of an atom in entering into chemical combination is its tendency", opts: [
+                    "to acquire electrons", "to loss electrons", "to donate electron pair",
+                    "to acquire octet configuration"
+                ], ans: 3 },
+            { q: "Which of the following does not have a duet configuration?", opts: ["Fluoride", "Lithium cation",
+                    "Helium atom", "Dioposite beryllium cation."
+                ], ans: 0 },
+            { q: "Noble gases are generally unreactive because", opts: ["They are gases", "they have s²p⁶ configuration",
+                    "They have very high ionization potentials",
+                    "they have large Vander Waal's radii."
+                ], ans: 1 },
+            { q: "Helium is monoatomic because", opts: ["It has very stable fulfilled configuration",
+                    "It is placed in zero group", "It has no vacant orbital",
+                    "Its ionization potential is highest among all elements"
+                ], ans: 0 },
+            { q: "Hydrogen atoms are held together to form hydrogen molecules by", opts: ["Hydrogen bond", "Ionic bond",
+                    "Covalent bond", "Dative bond"
+                ], ans: 2 },
+            { q: "Hydrogen chloride molecule contains a", opts: ["Covalent bond", "Double bond", "Coordinate bond",
+                    "Electrovalent bond"
+                ], ans: 0 },
+            { q: "The bond between two identical non-metal atoms has a pair of electrons", opts: [
+                    "Unequally shared between the two atoms.", "Transferred fully from one atom to another",
+                    "With identical spins", "Equally shared between them."
+                ], ans: 3 },
+            { q: "A covalent bond is likely to be formed between two elements which", opts: [
+                    "Have similar electronegativities", "Have low ionization energies", "Have low melting points",
+                    "Form ions with a small charge"
+                ], ans: 0 },
+            { q: "Octet configuration cannot be achieved through:", opts: ["Loss of electrons", "gain of electrons",
+                    "sharing of electrons", "exchange of electrons"
+                ], ans: 3 },
+            { q: "Bond formed in crystal by anion and cation is", opts: ["Ionic", "Metallic", "Covalent", "Dipole"],
+                ans: 0 },
+            { q: "Atoms or group of atoms which are electrically charged are known", opts: ["Anions", "Cations", "Ions",
+                    "Atoms"
+                ], ans: 2 },
+            { q: "A electrovalent compound is made up of", opts: ["Electrically charged molecules", "Neutral molecules",
+                    "Neutral atoms", "Electrically charged atoms or group of atoms"
+                ], ans: 3 },
+            { q: "When sodium and chlorine react then", opts: [
+                    "Energy is released, and ionic bond is formed",
+                    "Energy is released, and a covalent bond is formed",
+                    "Energy is absorbed, and ionic bond is formed",
+                    "Energy is absorbed, and covalent bond is formed"
+                ], ans: 0 },
+            { q: "An atom of sodium loses one electron and chlorine atom accepts one electron. This results the formation of sodium chloride molecule. This type of molecule will be",
+                opts: ["Coordinate", "Covalent", "Electrovalent", "Metallic bond"], ans: 2 },
+            { q: "An atom with atomic number 20 is most likely to combine chemically with the atom whose atomic number is",
+                opts: ["11", "14", "16", "10"], ans: 2 },
+            { q: "Which of the following compound has electrovalent linkage", opts: ["CH₃Cl", "NaCl", "CH₄", "Cl₂"],
+                ans: 1 },
+            { q: "Which one of the following compounds is ionic", opts: ["KCl", "CH₄", "Diamond", "Cl₂"], ans: 0 },
+            { q: "A covalent bond between two atoms is formed by which of the following", opts: [
+                    "Electron nuclear attraction", "Electron sharing", "Electron transfer",
+                    "Electrostatic attraction"
+                ], ans: 1 },
+            { q: "Atoms in the water molecule are linked by", opts: ["Electrovalent bond", "Covalent bond",
+                    "Coordinate covalent bond", "Odd electron bond"
+                ], ans: 1 },
+            { q: "Silicon has 4 electrons in the outermost orbit. In forming the bonds", opts: ["It loses electrons",
+                    "It gains electrons", "It shares electrons", "None of these"
+                ], ans: 2 },
+            { q: "the electron pair which forms a bond between two similar non-metallic atoms will be", opts: [
+                    "Dissimilar shared between the two", "by complete transfer from one atom to other",
+                    "in a similar spin condition", "Equally shared in between the two"
+                ], ans: 3 },
+            { q: "Amongst the following covalent bonding is found in", opts: ["Magnesium chloride", "Sodium chloride",
+                    "Water", "Brass"
+                ], ans: 2 },
+            { q: "Coordinate covalent compounds are formed by", opts: ["Transfer of electrons",
+                    "equal sharing of electrons", "unequal sharing of electrons", "none of these"
+                ], ans: 2 },
+            { q: "Which of the following substances has giant covalent structure", opts: ["Iodine crystal", "CO₂",
+                    "Silica", "White phosphorus"
+                ], ans: 0 },
+            { q: "Which condition favours the bond formation: -", opts: [
+                    "maximum attraction and maximum potential energy",
+                    "minimum attraction and minimum potential energy",
+                    "minimum potential energy and maximum attraction", "none of the above"
+                ], ans: 2 },
+            { q: "When two atoms combine to form a molecule?", opts: ["Energy is released", "Energy is absorbed",
+                    "Energy is neither released nor absorbed",
+                    "Energy may either released or absorbed"
+                ], ans: 0 },
+            { q: "In the formation of a molecule by an atom", opts: ["Attractive forces dominants",
+                    "Repulsive forces dominants", "Both attractive and repulsive forces dominants",
+                    "None of these"
+                ], ans: 0 },
+            { q: "Which of the following occurs when two hydrogen atoms bond with each others", opts: [
+                    "Potential energy is lowered", "Kinetic energy is lowered", "Electronic motion ceases",
+                    "Energy is absorbed"
+                ], ans: 0 },
+            { q: "The weakest bond of the following is:", opts: ["Ionic bond", "Covalent bond", "Hydrogen bond",
+                    "Metallic bond"
+                ], ans: 2 },
+            { q: "Among the following the weakest one is", opts: ["Metallic bond", "Ionic bond", "Van der Waal's force",
+                    "Covalent bond"
+                ], ans: 2 },
+            { q: "Strength of hydrogen bond is intermediate between", opts: ["Vander Waal and covalent",
+                    "Ionic and covalent", "Ionic and metallic", "Metallic and covalent"
+                ], ans: 0 },
+            { q: "When metals combine with non-metals, the metal atom tends to", opts: ["Lose electrons",
+                    "Gain electrons", "Remain electrically neutral", "None of these"
+                ], ans: 0 },
+            { q: "Which does not favour the formation of ionic compound:", opts: [
+                    "the ionization energy of the metal atom should be low.",
+                    "the lattice energy of the compound formed must be low.",
+                    "the electron affinity of the non-metal should be high.",
+                    "the lattice energy of the compound formed must be high."
+                ], ans: 1 },
+            { q: "Electrivalent bond formation depends on", opts: ["Ionization energy", "Electron affinity",
+                    "Lattice energy", "All the three above"
+                ], ans: 3 },
+            { q: "The lattice energy of sodium chloride crystal is the energy released when one mole of NaCl(s) is formed from:",
+                opts: ["Na(g) and Cl(g) atoms", "Na⁺(g) and Cl⁻(g) ions", "Na(s) and Cl₂(g)",
+                    "crystallization from aqueous solution of sodium chloride."
+                ], ans: 1 },
+            { q: "Lattice energy of BeCO₃(I) MgCO₃(II) and CaCO₃(III) are in the order", opts: ["I > II > III",
+                    "I < II < III", "I < III < II", "II < I < III"
+                ], ans: 0 },
+            { q: "Lattice energy of an ionic compound depends upon", opts: ["Charge on the ion only",
+                    "Size of the ion only", "Packing of ions only", "Charge on the ion and size of the ion"
+                ], ans: 3 },
+            { q: "Which of the following substance has the largest negative lattice enthalpy?", opts: ["NaCl", "CaBr₂",
+                    "NaBr", "CaCl₂"
+                ], ans: 3 },
+            { q: "Indicate the nature of bonding in CCl₄ and CaH₂", opts: [
+                    "Covalent in CCl₄ and electrovalent in CaH₂",
+                    "Electrovalent in both CCl₄ and CaH₂",
+                    "Covalent in both CCl₄ and CaH₂",
+                    "Electrovalent in CCl₄ and covalent in CaH₂"
+                ], ans: 0 },
+            { q: "Which forms a crystal of NaCl", opts: ["NaCl molecules", "Na⁺ and Cl⁻ ions", "Na and Cl atoms",
+                    "None of the above"
+                ], ans: 1 },
+            { q: "When sodium and chlorine react then", opts: [
+                    "Energy is released, and ionic bond is formed",
+                    "Energy is released, and a covalent bond is formed",
+                    "Energy is absorbed, and ionic bond is formed",
+                    "Energy is absorbed, and covalent bond is formed"
+                ], ans: 0 },
+            { q: "Which of the following is an electrovalent linkage", opts: ["CH₄", "MgCl₂", "SiCl₄", "BF₃"], ans: 1 },
+            { q: "From the following which group of elements easily forms cation", opts: ["F, Cl, Br", "Li, Na, K",
+                    "O, S, Se", "N, P, As"
+                ], ans: 1 },
+            { q: "Which of the following ionic compound has high lattice energy?", opts: ["NaF", "NaCl", "AlF₃",
+                    "Al₂O₃"
+                ], ans: 3 },
+            { q: "Which of the following has the highest lattice energy?", opts: ["NaF", "MgF₂", "AlF₃", "CaF₂"],
+                ans: 2 },
+            { q: "Compound having least lattice energy is:", opts: ["NaF", "KF", "RbF", "CsF"], ans: 3 },
+            { q: "The lattice energies of the oxides of Mg, Ca, Sr and Ba follow the order", opts: [
+                    "BaO > SrO > CaO > MgO", "CaO > BaO > SrO > MgO", "MgO > CaO > SrO > BaO",
+                    "MgO > SrO > CaO > BaO"
+                ], ans: 2 },
+            { q: "Which of the following has highest lattice energy?", opts: ["MgO", "SrO", "BaO", "CaO"], ans: 0 },
+            { q: "The order of increasing lattice energy of the following salt is:", opts: [
+                    "NaCl < CaO < NaBr < BaO", "NaBr < NaCl < BaO < CaO", "NaCl < NaBr < BaO < CaO",
+                    "NaBr < NaCl < CaO < BaO"
+                ], ans: 1 },
+            { q: "Lattice energy of alkali metal chlorides follows the order", opts: [
+                    "LiCl > NaCl > KCl > RbCl > CsCl", "CsCl > NaCl > KCl > RbCl > LiCl",
+                    "LiCl > CsCl > NaCl > KCl > RbCl", "NaCl > LiCl > KCl > RbCl > CsCl"
+                ], ans: 0 },
+            { q: "If the electronic configuration of M = 2,8,3 and that of A = 2,8,7, the formula of the compound is",
+                opts: ["MA₃", "MA", "M₂A₃", "M₃A₂"], ans: 0 },
+            { q: "The valency of A = 3 and B = 2, then the compound is", opts: ["AB₂", "AB", "AB₃", "A₂B₃"], ans: 3 },
+            { q: "Two elements X and Y have following electron configurations X = 1s²2s²2p⁶3s²3p⁶4s² and Y = 1s²2s²2p⁶3s²3p⁴. The compound formed by combination of X and Y is",
+                opts: ["XY", "X₂Y", "XY₂", "X₂Y₃"], ans: 0 },
+            { q: "An element X with the electronic configuration 1s²2s²2p⁶3s² would be expected to form the chloride with the formula",
+                opts: ["XCl", "X₂Cl", "XCl₂", "X₂Cl₃"], ans: 2 },
+            { q: "The sulphate of a metal has the formula M₂(SO₄)₃. The formula for its phosphate will be", opts: [
+                    "M(HPO₄)₂", "M₃(PO₄)₂", "M₂(PO₄)₃", "MPO₄"
+                ], ans: 3 },
+            { q: "Phosphate of a metal M has the formula M₃(PO₄)₂. The formula for its sulphate would be", opts: [
+                    "M(SO₄)₂", "M₃(SO₄)₂", "M₂(SO₄)₃", "MSO₄"
+                ], ans: 3 },
+            { q: "The molecular formula of chloride of a metal M is MCl. The formula of its carbonate would be", opts: [
+                    "M(CO₃)₂", "M₂(CO₃)", "M₃(CO₃)₂", "MCO₃"
+                ], ans: 1 },
+            { q: "Chloride of metal is MCl. The formula of its phosphate will be", opts: ["M(HPO₄)₂", "M₃(PO₄)₂",
+                    "M₂(PO₄)₃", "M₃PO₄"
+                ], ans: 3 },
+            { q: "The phosphate of a metal has the formula MPO₄. The formula of its nitrate will", opts: ["M(NO₃)₂",
+                    "M₃(NO₃)₂", "M(NO₃)₃", "MNO₃"
+                ], ans: 2 },
+            { q: "Formula of a metallic oxide is MO. The formula of its phosphate will be", opts: ["M(HPO₄)₂",
+                    "M₃(PO₄)₂", "M₂(PO₄)₃", "MPO₄"
+                ], ans: 1 },
+            { q: "Molten sodium chloride conducts electricity due to the presence of", opts: ["Free electrons",
+                    "Free ions", "Free molecules", "Atoms of sodium and chlorine"
+                ], ans: 1 },
+            { q: "Ionic compounds do not have", opts: ["Hard and brittle nature", "High melting and boiling point",
+                    "Directional properties", "Soluble in polar solvents"
+                ], ans: 2 },
+            { q: "Which of the following statements is wrong regarding ionic compounds -", opts: [
+                    "These are generally in solid state at room temperature",
+                    "The force of attraction between ions is non directional",
+                    "Ionic compounds are soluble in all solvents",
+                    "They conduct electricity in molten and solution state"
+                ], ans: 2 },
+            { q: "Electrovalent compound's", opts: ["Melting points are low", "Boiling points are low",
+                    "Conduct current in fused state", "Insoluble in polar solvent"
+                ], ans: 2 },
+            { q: "Element X is strongly electropositive, and Y is strongly electronegative. Both elements are univalent, the compounds formed from their combination will be",
+                opts: ["X⁺Y⁻", "X⁺Y⁺", "X—Y", "X→Y"], ans: 0 },
+            { q: "In the formation of NaCl from Na and Cl", opts: [
+                    "Sodium and chlorine both give electrons", "Sodium and chlorine both accept electrons",
+                    "Sodium loses electron and chlorine accepts electron",
+                    "Sodium accepts electron and chlorine loses electron"
+                ], ans: 2 },
+            { q: "Electrovalent compounds do not have", opts: ["High M.P. and Low B.P.", "High dielectric constant",
+                    "High M.P. and High B.P.", "High polarity"
+                ], ans: 0 },
+            { q: "Many ionic crystals dissolve in water because", opts: ["Water is an amphiprotic solvent",
+                    "Water is a high boiling liquid",
+                    "The process is accompanied by a positive heat of solution",
+                    "Water decreases the interionic attraction in the crystal lattice due to salvation"
+                ], ans: 3 },
+            { q: "The electronic structure of four elements A, B, C, D are (A) 1s² (B) 1s²,2s²,2p² (C) 1s²,2s²,2p⁵ (D) 1s²,2s²,2p⁶. The tendency to form electrovalent bond is largest in",
+                opts: ["A", "B", "C", "D"], ans: 2 },
+            { q: "In the given bonds which one is most ionic", opts: ["Cs—Cl", "Al—Cl", "C—Cl", "H—Cl"], ans: 0 },
+            { q: "Sodium chloride easily dissolves in water. This is because", opts: ["It is a covalent compound",
+                    "Salt reacts with water", "It is a white substance", "Its ions are easily solvated"
+                ], ans: 3 },
+            { q: "When NaCl is dissolved in water the sodium ion becomes", opts: ["Oxidized", "Reduced", "Hydrolysed",
+                    "Hydrated"
+                ], ans: 3 },
+            { q: "Solid NaCl is a bad conductor of electricity since", opts: ["In solid NaCl there are no ions",
+                    "Solid NaCl is covalent", "In solid NaCl there is no motion of ions",
+                    "In solid NaCl there are no electrons"
+                ], ans: 2 },
+            { q: "Ionic bonds are usually formed by combination of elements with", opts: [
+                    "High ionisation potential and low electron affinity",
+                    "Low ionisation potential and high electron affinity",
+                    "High ionisation potential and high electron affinity",
+                    "Low ionisation potential and low electron affinity"
+                ], ans: 1 },
+            { q: "Molten sodium chloride conducts electricity due to the presence of", opts: ["Free electrons",
+                    "Free ions", "Free molecules", "Atoms of sodium and chlorine"
+                ], ans: 1 },
+            { q: "A number of ionic compounds e.g., AgCl, CaF₂, BaSO₄ are insoluble in water. This is because", opts: [
+                    "Ionic compounds do not dissolve in water", "Water has a high dielectric constant",
+                    "Water is not a good ionizing solvent",
+                    "These molecules have exceptionally high alternative forces in the lattice"
+                ], ans: 3 },
+            { q: "What is the nature of chemical bonding between Cs and F", opts: ["Covalent", "Ionic", "Coordinate",
+                    "Metallic"
+                ], ans: 1 },
+            { q: "Which one of the following compounds is ionic", opts: ["KCl", "CH₄", "Diamond", "H₂"], ans: 0 },
+            { q: "Which of the following compound has electrovalent linkage", opts: ["CH₃Cl", "NaCl", "CH₄", "Cl₂"],
+                ans: 1 },
+            { q: "An ionic compound is generally a", opts: ["Good electrolyte", "Weak electrolyte",
+                    "Non-electrolyte", "Neutral"
+                ], ans: 0 },
+            { q: "What metals combine with non-metals, the metal atom tends to", opts: ["Lose electrons",
+                    "Gain electrons", "Remain electrically neutral", "None of these"
+                ], ans: 0 },
+            { q: "Among the bonds formed by a chlorine atom with atoms of hydrogen, chlorine, sodium and carbon, the strongest bond is formed between",
+                opts: ["HCl", "Cl—Cl", "Na—Cl", "C—Cl"], ans: 2 },
+            { q: "Out of the following, which compound will have electrovalent bonding", opts: ["Ammonia", "Water",
+                    "Calcium chloride", "Chloromethane"
+                ], ans: 2 },
+            { q: "The force which holds atoms together in an electrovalent bond is", opts: ["Vander Waal's force",
+                    "Dipole attraction force", "Electrostatic force of attraction", "All the above"
+                ], ans: 2 },
+            { q: "The main reaction during electrovalent bond formation is", opts: ["Redox reaction",
+                    "Substitution reaction", "Addition reaction", "Elimination reaction"
+                ], ans: 0 },
+            { q: "Electrovalent compounds are", opts: ["Good conductor of electricity", "Contain ions",
+                    "Low M.P. and low B.P.", "Easily available"
+                ], ans: 1 },
+            { q: "Ionic compounds do not have", opts: ["Hard and brittle nature", "High melting and boiling point",
+                    "Directional properties", "Soluble in polar solvents"
+                ], ans: 2 },
+            { q: "Which type of bonding exists in Li₂O and CaF₂ respectively", opts: ["Ionic, ionic", "Ionic, covalent",
+                    "Covalent, ionic", "Coordinate, ionic"
+                ], ans: 0 },
+            { q: "An atom with atomic number 20 is most likely to combine chemically with the atom whose atomic number is",
+                opts: ["11", "14", "16", "10"], ans: 2 },
+            { q: "Bond formed in crystal by anion and cation is", opts: ["Ionic", "Metallic", "Covalent", "Dipole"],
+                ans: 0 },
+            { q: "Atoms or group of atoms which are electrically charged are known", opts: ["Anions", "Cations", "Ions",
+                    "Atoms"
+                ], ans: 2 },
+            { q: "The interionic attraction depends on interaction of", opts: ["Solute—Solute", "Solvent—Solvent",
+                    "The charges", "Molecular properties"
+                ], ans: 2 },
+            { q: "Which of the following compounds is ionic", opts: ["KI", "CH₄", "Diamond", "H₂"], ans: 0 },
+            { q: "The energy that opposes dissolution of a ionic bond is", opts: ["Hydration energy", "Lattice energy",
+                    "Internal energy", "Bond energy"
+                ], ans: 1 },
+            { q: "Which of the following statements is not true for ionic compounds", opts: ["High melting point",
+                    "Least lattice energy", "Least solubility in organic compounds", "Soluble in water"
+                ], ans: 1 },
+            { q: "Electrolytes are compound containing", opts: ["Electrovalent bond", "Covalent bond",
+                    "Coordinate bond", "Hydrogen bond"
+                ], ans: 0 },
+            { q: "The electronic configuration of a metal M is 1s²,2s²2p⁶,3s². The formula of its oxides will be", opts: [
+                    "MO₂", "MO", "M₂O₃", "M₃O₂"
+                ], ans: 1 },
+            { q: "Solid NaCl is a bad conductor of electricity because:", opts: ["In solid NaCl there are no ions",
+                    "Solid NaCl is covalent", "In solid NaCl there is no mobility of ions",
+                    "In solid NaCl there are no electrons"
+                ], ans: 2 },
+            { q: "Compound with maximum ionic character is formed from:", opts: ["Na and Cl", "Cs and F", "Cs and I",
+                    "Na and F"
+                ], ans: 1 },
+            { q: "Which of the following compound has maximum covalent character", opts: ["PbI₂", "AgI", "HgI₂",
+                    "CsI"], ans: 2 },
+            { q: "Polarization is the distortion of the shape of an anion by an adjacently placed cation. Which of the following statements is correct?",
+                opts: ["Maximum polarization is brought about by a cation of high charge",
+                    "Minimum polarization is brought about by a cation of low radius",
+                    "A large cation is likely to bring about a large degree of polarization",
+                    "A small anion is likely to undergo a large degree of polarization"
+                ], ans: 0 },
+            { q: "bond with maximum covalent character between non-metallic elements is formed", opts: [
+                    "Between identical atoms", "Between chemically similar atoms",
+                    "between atoms of widely different electronegativities", "between atoms of the same size"
+                ], ans: 0 },
+            { q: "Polarising power is estimated by", opts: ["(ionic charge) / (ionic radius)²",
+                    "(ionic charge)² / (ionic radius)³", "(ionic charge) / (ionic radius)",
+                    "(ionic charge)² / (ionic radius)²"
+                ], ans: 2 },
+            { q: "Out of list I select the cation which has less polarizing power than Ca²⁺ and from list II select the anion having more polarizability than S²⁻. List I: Mg²⁺ Sc³⁺ K⁺ List II: O²⁻ Cl⁻ P³⁻",
+                opts: ["Mg²⁺ O²⁻", "K⁺ P³⁻", "Sc³⁺ P³⁻", "Mg²⁺ Cl⁻"], ans: 1 },
+            { q: "Which cationic species has more polarising power -", opts: ["Na⁺", "Mg²⁺", "Al³⁺", "all"], ans: 2 },
+            { q: "According to Fajan's rule covalent bond is favoured by -", opts: ["Large cation and small anion",
+                    "Large cation and large anion", "Small cation and large anion",
+                    "Small cation and small anion"
+                ], ans: 2 },
+            { q: "Which option is correct for the following order LiCl < NaCl < KCl < RbCl < CsCl", opts: [
+                    "Ionic character", "Melting point order", "Solubility in water",
+                    "Polarising power of their cations"
+                ], ans: 0 },
+            { q: "Choose incorrect option:", opts: [
+                    "More distortion of anion, more will be polarisation then covalent character increases.",
+                    "CsF is 100% ionic compound.", "Charge on cation α polarisation.",
+                    "Size of anion α polarisation"
+                ], ans: 1 },
+            { q: "Among LiCl, BeCl₂, BCl₃ and CCl₄, the covalent bond characteristics follow the order", opts: [
+                    "LiCl > BeCl₂ > BCl₃ > CCl₄", "LiCl < BeCl₂ < BCl₃ < CCl₄",
+                    "LiCl > BeCl₂ > BCl₃ > CCl₄", "LiCl > BeCl₂ < BCl₃ > CCl₄"
+                ], ans: 1 },
+            { q: "Which among the following has maximum covalent character:", opts: ["NaCl", "MgCl₂", "AlCl₃",
+                    "CaCl₂"
+                ], ans: 2 },
+            { q: "Among LiCl, BeCl₂, NaCl, CsCl, the compounds with the greatest and the least ionic character respectively are",
+                opts: ["LiCl and CsCl", "NaCl and LiCl", "CsCl and NaCl", "CsCl and BeCl₂"], ans: 3 },
+            { q: "The correct order of increasing covalent character is:", opts: ["LiCl, NaCl, BeCl₂",
+                    "BeCl₂, NaCl, LiCl", "NaCl, LiCl, BeCl₂", "BeCl₂, LiCl, NaCl"
+                ], ans: 2 },
+            { q: "Choose the compounds of maximum and minimum ionic character from LiCl, RbCl, BeCl₂ and MgCl₂:", opts: [
+                    "LiCl and RbCl", "RbCl and BeCl₂", "RbCl and MgCl₂", "MgCl₂ and BeCl₂"
+                ], ans: 1 },
+            { q: "Higher polarisation in case of AgCl compared to KCl is due to", opts: ["larger size of cation",
+                    "smaller size of cation", "inert gas configuration of cation",
+                    "Pseudo inert gas configuration of cation."
+                ], ans: 3 },
+            { q: "Which of the following is most covalent.", opts: ["CuCl", "NaCl", "AgCl", "AuCl"], ans: 3 },
+            { q: "Out of the following which one has the highest values of covalent character?", opts: ["ZnCl₂",
+                    "CdCl₂", "HgCl₂", "CuCl"
+                ], ans: 2 },
+            { q: "Which of the following has highest covalent character.", opts: ["CaCl₂", "ZnCl₂", "KCl", "CuCl"],
+                ans: 1 },
+            { q: "Polarisation may be called as the distortion of the shape of an anion by an adjacently placed cation. Which of the following statements is/are correct?",
+                opts: ["Lesser polarization is brought about by a cation of low radius",
+                    "A large cation is likely to bring about a large degree of polarization",
+                    "Larger polarisation is brought about by a cation of high charge",
+                    "A small anion is likely to undergo a large degree of polarisation"
+                ], ans: 2 },
+            { q: "Out of following which one has maximum ionic character -", opts: ["NaCl", "KCl", "CaCl₂", "MgCl₂"],
+                ans: 1 },
+            { q: "Favourable conditions for electrovalence are", opts: [
+                    "Low charge on ions, large cation, small anion",
+                    "High charge on ions, small cation, large anion",
+                    "High charge on ions, large cation, small anion",
+                    "Low charge on ions, small cation, large anion"
+                ], ans: 0 },
+            { q: "Which one is most ionic in the following compounds", opts: ["AgCl", "KCl", "BaCl₂", "CaCl₂"],
+                ans: 1 },
+            { q: "Which of the following does not conduct electricity in the fused state", opts: ["BeCl₂", "MgCl₂",
+                    "SrCl₂", "BaCl₂"
+                ], ans: 0 },
+            { q: "If the electron pair forming a bond between two atoms A and B is not in the centre, then the bond is",
+                opts: ["Single bond", "Polar bond", "Non-polar bond", "π-bond"], ans: 1 },
+            { q: "Polarization is the distortion of the shape of an anion by an adjacently placed cation. Which of the following statements is correct?",
+                opts: ["Maximum polarization is brought about by a cation of high charge",
+                    "Minimum polarization is brought about by a cation of low radius",
+                    "A large cation is likely to bring about a large degree of polarization",
+                    "A small anion is likely to undergo a large degree of polarization"
+                ], ans: 0 },
+            { q: "The bonds between P atoms and Cl atoms in PCl₅ are likely to be", opts: [
+                    "Ionic with no covalent character", "Covalent with some ionic character",
+                    "Covalent with no ionic character", "Ionic with some metallic character"
+                ], ans: 1 },
+            { q: "Two electrons of one atom A and two electrons of another atom B are utilized to form a compound AB. This is an example of",
+                opts: ["Polar covalent bond", "non-polar covalent bond", "Metallic bond", "Dative bond"], ans: 0 },
+            { q: "Which of the following has a high polarising power", opts: ["Mg²⁺", "Al³⁺", "Na⁺", "Ca²⁺"], ans: 1 },
+            { q: "Maximum covalent character is associated with the compound", opts: ["NaI", "MgI₂", "AlCl₃", "AlI₃"],
+                ans: 3 },
+            { q: "Polarisibility of halide ions increases in the order", opts: ["F⁻, Cl⁻, Br⁻, I⁻", "Cl⁻, F⁻, Br⁻, I⁻",
+                    "I⁻, Br⁻, Cl⁻, F⁻", "I⁻, Br⁻, F⁻, Cl⁻"
+                ], ans: 0 },
+            { q: "According to Fajan's rule, covalent bond is favoured by", opts: ["Large cation and small anion",
+                    "Large cation and large anion", "Small cation and large anion",
+                    "Small cation and small anion"
+                ], ans: 2 },
+            { q: "Choose the correct statement", opts: [
+                    "Anion polarisation is more pronounced by highly charged cation",
+                    "Small cation has minimum capacity to polarise an anion.",
+                    "Small anion has maximum polarizability", "None of these"
+                ], ans: 0 },
+            { q: "Amongst LiCl, RbCl, BeCl₂ and MgCl₂ the compounds with the greatest and the least ionic character, respectively, are",
+                opts: ["LiCl and RbCl", "RbCl and BeCl₂", "RbCl and MgCl₂", "MgCl₂ and BeCl₂"], ans: 1 },
+            { q: "Compound with maximum ionic character is formed from:", opts: ["Na and Cl", "Cs and F", "Cs and I",
+                    "Na and F"
+                ], ans: 1 },
+            { q: "Which compound is highest covalent", opts: ["LiCl", "LiF", "LiBr", "LiI"], ans: 3 },
+            { q: "Which among the following elements has the tendency to form covalent compounds", opts: ["Ba", "Be",
+                    "Mg", "Ca"
+                ], ans: 1 },
+            { q: "A bond with maximum covalent character between non-metallic elements is formed", opts: [
+                    "Between identical atoms", "Between chemically similar atoms",
+                    "Between atoms of widely different electronegativities", "Between atoms of the same size"
+                ], ans: 0 },
+            { q: "The correct sequence of increasing covalent character is represented by", opts: [
+                    "LiCl < NaCl < BeCl₂", "BeCl₂ < NaCl < LiCl", "NaCl < LiCl < BeCl₂",
+                    "BeCl₂ < LiCl < NaCl"
+                ], ans: 2 },
+            { q: "Highest covalent character is found in", opts: ["CaF₂", "CaCl₂", "CaBr₂", "CaI₂"], ans: 3 },
+            { q: "The following salt shows maximum covalent character", opts: ["AlCl₃", "MgCl₂", "CsCl", "LaCl₃"],
+                ans: 0 },
+            { q: "Which of the following has covalent bond", opts: ["Na₂S", "AlCl₃", "NaH", "MgCl₂"], ans: 1 }
+        ];
+
+        // ============================================================
+        //  QUIZ ENGINE
+        // ============================================================
+        const POINTS_PER_QUESTION = 10;
+        const TOTAL_QS = QUESTIONS.length;
+
+        let state = {
+            user: null, // { name, id }
+            currentQ: 0,
+            score: 0,
+            answered: false,
+            gameActive: false,
+            gameCounted: false, // true if this game counts for leaderboard
+            hasPlayedBefore: false, // from Firestore
+            userId: null,
+        };
+
+        // DOM refs
+        const $ = (id) => document.getElementById(id);
+        const screens = {
+            login: $('loginScreen'),
+            dashboard: $('dashboardScreen'),
+            quiz: $('quizScreen'),
+            gameOver: $('gameOverScreen'),
+            leaderboard: $('leaderboardScreen'),
+        };
+
+        // ============================================================
+        //  TOAST
+        // ============================================================
+        let toastTimeout;
+
+        function showToast(msg, icon = '✨') {
+            const el = $('toast');
+            $('toastMessage').textContent = msg;
+            el.querySelector('.toast-icon').textContent = icon;
+            el.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // ============================================================
+        //  SCREEN NAVIGATION
+        // ============================================================
+        function showScreen(name) {
+            Object.keys(screens).forEach(k => {
+                screens[k].classList.toggle('active', k === name);
+            });
+        }
+
+        // ============================================================
+        //  FIREBASE HELPERS
+        // ============================================================
+        function getUserRef(uid) {
+            if (!db) return null;
+            return db.collection('users').doc(uid);
+        }
+
+        async function loadUserData(uid) {
+            if (!db || !firebaseReady) {
+                // Fallback: localStorage
+                const raw = localStorage.getItem(`quiz_user_${uid}`);
+                if (raw) return JSON.parse(raw);
+                return null;
+            }
+            try {
+                const doc = await getUserRef(uid).get();
+                if (doc.exists) return doc.data();
+                return null;
+            } catch (e) {
+                console.warn('Firestore read error:', e);
+                return null;
+            }
+        }
+
+        async function saveUserData(uid, data) {
+            if (!db || !firebaseReady) {
+                localStorage.setItem(`quiz_user_${uid}`, JSON.stringify(data));
+                return;
+            }
+            try {
+                await getUserRef(uid).set(data, { merge: true });
+            } catch (e) {
+                console.warn('Firestore write error:', e);
+                // Fallback
+                localStorage.setItem(`quiz_user_${uid}`, JSON.stringify(data));
+            }
+        }
+
+        async function getLeaderboard() {
+            if (!db || !firebaseReady) {
+                // Fallback: read all from localStorage
+                const users = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('quiz_user_')) {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(key));
+                            if (data && data.name) {
+                                users.push({ id: key.replace('quiz_user_', ''), ...data });
+                            }
+                        } catch (e) {}
+                    }
+                }
+                return users.sort((a, b) => (b.highScore || 0) - (a.highScore || 0));
+            }
+            try {
+                const snapshot = await db.collection('users')
+                    .orderBy('highScore', 'desc')
+                    .limit(100)
+                    .get();
+                const users = [];
+                snapshot.forEach(doc => {
+                    users.push({ id: doc.id, ...doc.data() });
+                });
+                return users;
+            } catch (e) {
+                console.warn('Leaderboard error:', e);
+                return [];
+            }
+        }
+
+        // ============================================================
+        //  LOGIN
+        // ============================================================
+        $('loginBtn').addEventListener('click', handleLogin);
+        $('loginName').addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+        async function handleLogin() {
+            const input = $('loginName');
+            const name = input.value.trim();
+            if (!name) {
+                showToast('Please enter your name', '👋');
+                input.focus();
+                return;
+            }
+            if (name.length < 2) {
+                showToast('Name must be at least 2 characters', '✍️');
+                return;
+            }
+
+            $('loginBtn').disabled = true;
+            $('loginBtn').textContent = '⏳ Logging in…';
+
+            // Create a stable user ID from name
+            const uid = 'user_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now().toString(36);
+            const userData = {
+                name: name,
+                highScore: 0,
+                gamesPlayed: 0,
+                lastScore: 0,
+                lastPlayed: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+            };
+
+            // Check if user exists with same name
+            let existing = null;
+            if (db && firebaseReady) {
+                try {
+                    const snapshot = await db.collection('users')
+                        .where('name', '==', name)
+                        .limit(1)
+                        .get();
+                    if (!snapshot.empty) {
+                        const doc = snapshot.docs[0];
+                        existing = { id: doc.id, ...doc.data() };
+                    }
+                } catch (e) {
+                    console.warn('Lookup error:', e);
+                }
+            } else {
+                // localStorage lookup
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('quiz_user_')) {
+                        try {
+                            const data = JSON.parse(localStorage.getItem(key));
+                            if (data && data.name === name) {
+                                existing = { id: key.replace('quiz_user_', ''), ...data };
+                                break;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            if (existing) {
+                state.userId = existing.id;
+                // Use existing data
+                const data = existing;
+                state.hasPlayedBefore = (data.gamesPlayed || 0) > 0;
+                state.user = { name: data.name, id: existing.id };
+                // Update lastPlayed
+                await saveUserData(existing.id, { lastPlayed: new Date().toISOString() });
+                showToast(`Welcome back, ${name}!`, '👋');
+            } else {
+                state.userId = uid;
+                state.hasPlayedBefore = false;
+                state.user = { name, id: uid };
+                await saveUserData(uid, userData);
+                showToast(`Welcome, ${name}! Ready to play?`, '🚀');
+            }
+
+            $('loginBtn').disabled = false;
+            $('loginBtn').textContent = 'Start Journey →';
+
+            // Load fresh user data
+            const fresh = await loadUserData(state.userId);
+            if (fresh) {
+                state.hasPlayedBefore = (fresh.gamesPlayed || 0) > 0;
+            }
+
+            showDashboard();
+        }
+
+        // ============================================================
+        //  DASHBOARD
+        // ============================================================
+        async function showDashboard() {
+            showScreen('dashboard');
+
+            const data = await loadUserData(state.userId);
+            if (!data) {
+                showToast('Error loading profile', '⚠️');
+                return;
+            }
+
+            const name = data.name || state.user.name;
+            $('dashName').textContent = name;
+            $('dashAvatar').textContent = name.charAt(0).toUpperCase();
+
+            const score = data.highScore || 0;
+            const games = data.gamesPlayed || 0;
+            $('dashScore').textContent = score;
+            $('dashGames').textContent = games;
+
+            // Get rank
+            const lb = await getLeaderboard();
+            const rank = lb.findIndex(u => u.id === state.userId) + 1;
+            $('dashRank').textContent = rank > 0 ? `#${rank}` : '—';
+
+            const status = $('dashStatus');
+            if (games === 0) {
+                status.textContent = '🌟 First game counts toward leaderboard!';
+            } else {
+                status.textContent = '📚 Practice mode — scores are for fun!';
+            }
+
+            // Update play button text
+            const playBtn = $('playBtn');
+            if (games === 0) {
+                playBtn.textContent = '⚡ Play Quiz (counts!)';
+            } else {
+                playBtn.textContent = '⚡ Play Quiz (practice)';
+            }
+        }
+
+        // ============================================================
+        //  LOGOUT
+        // ============================================================
+        $('logoutBtn').addEventListener('click', () => {
+            state.user = null;
+            state.userId = null;
+            state.hasPlayedBefore = false;
+            showScreen('login');
+            $('loginName').value = '';
+            $('loginName').focus();
+            showToast('Signed out', '👋');
+        });
+
+        // ============================================================
+        //  LEADERBOARD
+        // ============================================================
+        $('leaderboardBtn').addEventListener('click', showLeaderboard);
+        $('lbBackBtn').addEventListener('click', () => showDashboard());
+
+        async function showLeaderboard() {
+            showScreen('leaderboard');
+            const list = $('lbList');
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">Loading…</div>';
+
+            const users = await getLeaderboard();
+
+            if (!users || users.length === 0) {
+                list.innerHTML = `
+                    <div class="lb-empty">
+                        <span class="big">📭</span>
+                        <div class="msg">No players yet. Be the first!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filter out users with 0 score
+            const filtered = users.filter(u => (u.highScore || 0) > 0);
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="lb-empty">
+                        <span class="big">🏁</span>
+                        <div class="msg">No scores recorded yet. Start playing!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = '';
+            filtered.forEach((u, idx) => {
+                const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : '';
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                const div = document.createElement('div');
+                div.className = 'lb-item';
+                div.innerHTML = `
+                    <div class="rank ${rankClass}">${medal}</div>
+                    <div class="avatar">${(u.name || 'U').charAt(0).toUpperCase()}</div>
+                    <div class="info">
+                        <div class="name">${u.name || 'Anonymous'}</div>
+                        <div class="sub">${u.gamesPlayed || 0} game${(u.gamesPlayed || 0) !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="score">${u.highScore || 0}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // ============================================================
+        //  QUIZ ENGINE
+        // ============================================================
+        let quizState = {
+            qIndex: 0,
+            score: 0,
+            answered: false,
+            active: false,
+            counted: false,
+        };
+
+        $('playBtn').addEventListener('click', startQuiz);
+        $('quitQuizBtn').addEventListener('click', quitQuiz);
+        $('goPlayAgain').addEventListener('click', () => startQuiz(true));
+        $('goDashboard').addEventListener('click', () => showDashboard());
+
+        function startQuiz(practice = false) {
+            // Check if user has played before
+            const dataPromise = loadUserData(state.userId);
+            dataPromise.then(data => {
+                const gamesPlayed = data ? (data.gamesPlayed || 0) : 0;
+                // If gamesPlayed === 0, this game counts
+                const counts = gamesPlayed === 0;
+
+                quizState.qIndex = 0;
+                quizState.score = 0;
+                quizState.answered = false;
+                quizState.active = true;
+                quizState.counted = counts;
+
+                showScreen('quiz');
+                renderQuestion();
+                showToast(counts ? '🏆 This game counts for leaderboard!' : '📚 Practice mode — have fun!',
+                    counts ? '🏆' : '📚');
+            });
+        }
+
+        function quitQuiz() {
+            if (quizState.active) {
+                if (confirm('Quit the quiz? Your progress will be lost.')) {
+                    quizState.active = false;
+                    showDashboard();
+                }
+            } else {
+                showDashboard();
+            }
+        }
+
+        function renderQuestion() {
+            if (quizState.qIndex >= TOTAL_QS) {
+                // Completed all questions!
+                endQuiz(true);
+                return;
+            }
+
+            const q = QUESTIONS[quizState.qIndex];
+            $('qNum').textContent = quizState.qIndex + 1;
+            $('qTotal').textContent = TOTAL_QS;
+            $('qScore').textContent = quizState.score;
+            $('qText').textContent = q.q;
+
+            const progress = (quizState.qIndex / TOTAL_QS) * 100;
+            $('qProgress').style.width = progress + '%';
+
+            const options = document.querySelectorAll('#optionsGrid .option-btn');
+            options.forEach((btn, idx) => {
+                btn.querySelector('.text').textContent = q.opts[idx] || '—';
+                btn.classList.remove('selected', 'correct', 'wrong', 'disabled');
+                btn.disabled = false;
+            });
+
+            quizState.answered = false;
+        }
+
+        document.querySelectorAll('#optionsGrid .option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (quizState.answered || !quizState.active) return;
+                const idx = parseInt(this.dataset.idx);
+                const q = QUESTIONS[quizState.qIndex];
+                const isCorrect = idx === q.ans;
+
+                quizState.answered = true;
+                const allBtns = document.querySelectorAll('#optionsGrid .option-btn');
+                allBtns.forEach(b => b.disabled = true);
+
+                // Highlight correct
+                allBtns.forEach((b, i) => {
+                    if (i === q.ans) b.classList.add('correct');
+                });
+
+                if (isCorrect) {
+                    quizState.score += POINTS_PER_QUESTION;
+                    $('qScore').textContent = quizState.score;
+                    this.classList.add('correct');
+                    // Short feedback
+                } else {
+                    this.classList.add('wrong');
+                    // Game over
+                    setTimeout(() => endQuiz(false), 400);
+                    return;
+                }
+
+                // Move to next question after short delay
+                setTimeout(() => {
+                    quizState.qIndex++;
+                    renderQuestion();
+                }, 300);
+            });
+        });
+
+        function endQuiz(completed) {
+            quizState.active = false;
+
+            const score = quizState.score;
+            const total = TOTAL_QS;
+            const correct = score / POINTS_PER_QUESTION;
+
+            // Save to Firestore if this game counted
+            if (quizState.counted) {
+                // Update user data
+                loadUserData(state.userId).then(async data => {
+                    const currentHigh = data ? (data.highScore || 0) : 0;
+                    const games = data ? (data.gamesPlayed || 0) : 0;
+
+                    // Only update highScore if this is the first game (games === 0)
+                    const newHigh = (games === 0) ? Math.max(currentHigh, score) : currentHigh;
+
+                    await saveUserData(state.userId, {
+                        highScore: newHigh,
+                        gamesPlayed: games + 1,
+                        lastScore: score,
+                        lastPlayed: new Date().toISOString(),
+                    });
+
+                    // Update state
+                    state.hasPlayedBefore = true;
+                });
+            } else {
+                // Still update lastScore and gamesPlayed but not highScore
+                loadUserData(state.userId).then(async data => {
+                    const games = data ? (data.gamesPlayed || 0) : 0;
+                    await saveUserData(state.userId, {
+                        gamesPlayed: games + 1,
+                        lastScore: score,
+                        lastPlayed: new Date().toISOString(),
+                    });
+                });
+            }
+
+            // Show game over screen
+            const icon = completed ? '🎉' : '😢';
+            const title = completed ? 'Congratulations!' : 'Game Over';
+            const sub = completed ?
+                `You answered all ${TOTAL_QS} questions correctly!` :
+                `You answered ${correct} out of ${quizState.qIndex} questions correctly.`;
+
+            $('goIcon').textContent = icon;
+            $('goTitle').textContent = title;
+            $('goSub').textContent = sub;
+            $('goScore').textContent = score;
+
+            const note = $('goNote');
+            if (quizState.counted && !completed) {
+                note.innerHTML =
+                    `💡 <span class="highlight">Score saved</span> to leaderboard! Practice games are for fun.`;
+            } else if (quizState.counted && completed) {
+                note.innerHTML = `🏆 <span class="highlight">Perfect score!</span> You're a champion!`;
+            } else {
+                note.innerHTML = `📚 <span class="highlight">Practice game</span> — scores are for fun. First game counts for leaderboard!`;
+            }
+
+            showScreen('gameOver');
+        }
+
+        // ============================================================
+        //  KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && screens.login.classList.contains('active')) {
+                handleLogin();
+            }
+            if (e.key >= '1' && e.key <= '4' && screens.quiz.classList.contains('active')) {
+                const idx = parseInt(e.key) - 1;
+                const btns = document.querySelectorAll('#optionsGrid .option-btn');
+                if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+            }
+        });
+
+        // ============================================================
+        //  INIT — show login
+        // ============================================================
+        showScreen('login');
+        $('loginName').focus();
+
+        // Check if user already logged in (session)
+        // Simple session: check if we have a user in memory
+        // For demo, we start fresh
+
+        console.log('🧪 QuizForge ready — ' + TOTAL_QS + ' questions loaded');
+
+        // ============================================================
+        //  FALLBACK: if Firebase not configured, use localStorage
+        // ============================================================
+        if (!firebaseReady) {
+            console.log('📦 Using localStorage fallback');
+            // Override functions to use localStorage
+            // Already handled in the functions above
+        }
+    </script>
+
+</body>
+</html>
